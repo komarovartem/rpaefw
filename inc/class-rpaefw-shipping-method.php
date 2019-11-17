@@ -1,0 +1,1084 @@
+<?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class RPAEFW_Shipping_Method extends WC_Shipping_Method {
+	public function __construct( $instance_id = 0 ) {
+		$this->id                 = 'rpaefw_post_calc';
+		$this->instance_id        = absint( $instance_id );
+		$this->method_title       = esc_html__( 'Russian Post', 'russian-post-and-ems-for-woocommerce' );
+		$this->method_description = esc_html__( 'The plugin allows you to automatically calculate shipping costs "Russian Post" or "EMS" on the checkout page using official tariff.pochta.ru service.', 'russian-post-and-ems-for-woocommerce' );
+		$this->supports           = array(
+			'shipping-zones',
+			'instance-settings'
+		);
+
+		$settings_basic      = [
+			'basic' => array(
+				'title' => esc_html__( 'Basic Settings', 'russian-post-and-ems-for-woocommerce' ),
+				'type'  => 'title',
+			),
+			'title' => array(
+				'title'             => esc_html__( 'Title', 'russian-post-and-ems-for-woocommerce' ),
+				'description'       => esc_html__( 'This title will be displayed in checkout', 'russian-post-and-ems-for-woocommerce' ),
+				'type'              => 'text',
+				'default'           => esc_html__( 'Russian Post', 'russian-post-and-ems-for-woocommerce' ),
+				'custom_attributes' => array(
+					'required' => 'required'
+				),
+			),
+			'from'  => array(
+				'title'       => esc_html__( 'Оrigin Postcode', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Optional. 6-digit code of the sender. By default equals to the store postcode. You can specify different from store address one if there is a need.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'number',
+			),
+			'type'  => array(
+				'title'       => esc_html__( 'Type', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Select shipping type (in brackets displayed the max allowed weight of shipping method). If this method associated with international shipping zone, make sure you select international type of shipping. If you want to use shipping types for corporate clients you need to add additional info in Russian post plugin settings.', 'russian-post-and-ems-for-woocommerce' ) . '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '">' . esc_html__( 'Russian Post Settings', 'russian-post-and-ems-for-woocommerce' ) . '</a>',
+				'type'        => 'select',
+				'default'     => 27030,
+				'options'     => array(
+					3000  => 'Бандероль простая (5кг)',
+					3010  => 'Бандероль заказная (5кг)',
+					3020  => 'Бандероль с объявленной ценностью (5кг)',
+					16010 => 'Бандероль 1 класса заказная (2.5кг)',
+					16020 => 'Бандероль 1 класса заказная с объявленной ценностью (2.5кг)',
+					27030 => 'Посылка стандарт (10кг)',
+					27020 => 'Посылка стандарт с объявленной ценностью (10кг)',
+					29030 => 'Посылка экспресс (10кг)',
+					29020 => 'Посылка экспресс с объявленной ценностью (10кг)',
+					28030 => 'Посылка курьер EMS (10кг)',
+					28020 => 'Посылка курьер EMS с объявленной ценностью (10кг)',
+					4030  => 'Посылка нестандартная  (50кг)',
+					4020  => 'Посылка нестандартная с объявленной ценностью  (50кг)',
+					47030 => 'Посылка 1 класса (2.5кг)',
+					47020 => 'Посылка 1 класса с объявленной ценностью (2.5кг)',
+					23030 => 'Посылка онлайн обыкновенная (20кг)',
+					23020 => 'Посылка онлайн с объявленной ценностью (20кг)',
+					51030 => 'Посылка Легкий возврат обыкновенная (20кг)',
+					51020 => 'Посылка Легкий возврат с объявленной ценностью (20кг)',
+					24030 => 'Курьер онлайн обыкновенный (31.5кг)',
+					24020 => 'Курьер онлайн с объявленной ценностью (31.5кг)',
+					30030 => 'Бизнес курьер (31.5кг)',
+					30020 => 'Бизнес курьер с объявленной ценностью (31.5кг)',
+					7030  => 'EMS (31.5кг)',
+					7020  => 'EMS с объявленной ценностью (31.5кг)',
+					41030 => 'EMS РТ (31.5кг)',
+					41020 => 'EMS РТ с объявленной ценностью (31.5кг)',
+					34030 => 'EMS оптимальное (20кг)',
+					34020 => 'EMS оптимальное с объявленной ценностью (20кг)',
+					4031  => 'Международные отправления. Посылка обыкновенная (20кг)',
+					4021  => 'Международные отправления. Посылка с объявленной ценностью (20кг)',
+					7031  => 'Международные отправления. EMS обыкновенное (31.5кг)',
+					5001  => 'Международные отправления. Мелкий пакет простой (2кг)',
+					5011  => 'Международные отправления. Мелкий пакет заказной (2кг)',
+					3001  => 'Международные отправления. Бандероль простая (5кг)',
+					3011  => 'Международные отправления. Бандероль заказная (5кг)',
+					9001  => 'Международные отправления. Мешок М простой  (14.5кг)',
+					9011  => 'Международные отправления. Мешок М заказной  (14.5кг)',
+				)
+			),
+			'pack'  => array(
+				'title'       => esc_html__( 'Package Type', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Only for shipping types: Посылка (стандарт, экспресс, курьер EMS) package is required. Note there are weight limitations for packages (in brackets displayed the max allowed weight).', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'select',
+				'default'     => '10',
+				'options'     => array(
+					'10' => 'Коробка «S» (10кг)',
+					'11' => 'Пакет полиэтиленовый «S» (7кг)',
+					'12' => 'Конверт с воздушно-пузырчатой пленкой «S» (2кг)',
+					'20' => 'Коробка «М» (10кг)',
+					'21' => 'Пакет полиэтиленовый «М»  (7кг)',
+					'22' => 'Конверт с воздушно-пузырчатой пленкой «М» (2кг)',
+					'30' => 'Коробка «L» (10кг)',
+					'31' => 'Пакет полиэтиленовый «L»  (7кг)',
+					'40' => 'Коробка «ХL» (10кг)',
+					'41' => 'Пакет полиэтиленовый «ХL»  (7кг)',
+				)
+			),
+		];
+		$settings_additional = [
+			'add_settings'   => array(
+				'title' => esc_html__( 'Additional Settings', 'russian-post-and-ems-for-woocommerce' ),
+				'type'  => 'title',
+			),
+			'addcost'        => array(
+				'title'       => esc_html__( 'Additional Сost', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Additional flat rate in RUB for shipping method. This may be the average value of the package or the cost of fuel, spent on the road to the post;)', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'number',
+				'default'     => 0,
+			),
+			'fixedpackvalue' => array(
+				'title'       => esc_html__( 'Max. Fixed Package Value', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'You can set max. fixed value in RUB for some types of departure. By default value equals sum of the order.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'number',
+			),
+
+			// packaging
+			'addpackweight'  => array(
+				'title'       => esc_html__( 'Packaging', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Weight of the one packaging in grams. This weight will be added to the total weight of the order.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'number',
+				'default'     => 0,
+			),
+			'addpackcost'    => array(
+				'description' => esc_html__( 'Cost of the one packaging. This cost will be added to the final amount of delivery.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'number',
+				'default'     => 0,
+			),
+
+			'time' => array(
+				'title'       => esc_html__( 'Delivery Time', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'checkbox',
+				'label'       => esc_html__( 'Show time of delivery.', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Displayed next to the title. Note, it does not work for international shipping.', 'russian-post-and-ems-for-woocommerce' ),
+				'default'     => 'no',
+			),
+		];
+
+		$settings_conditions = [
+			'cond_settings' => array(
+				'title'       => esc_html__( 'Conditions', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Turn off and on a method based on some conditions. By default, the method will be turned off when the weight of the order is greater than allowed in a selected type of shipping.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'title',
+			),
+
+			'fixedvalue_disable' => array(
+				'title'       => esc_html__( 'Min. cost of order in RUB', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Disable this method if the cost of the order is less than inputted value. Leave this field empty to allow any order cost.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'number',
+			),
+
+			'cond_min_weight' => array(
+				'title'       => esc_html__( 'Min. weight of order in grams', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Disable this method if the weight of the order is less than inputted value. Leave this field empty to allow any order weight.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'number',
+			),
+			'cond_max_weight' => array(
+				'title'       => esc_html__( 'Max. weight of order in grams', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Disable this method if the weight of the order is more than inputted value. Leave this field empty to allow any order weight.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'number',
+			),
+		];
+
+		$settings_basic      = apply_filters( 'rpaefw_basic_shipping_settings', $settings_basic );
+		$settings_additional = apply_filters( 'rpaefw_additional_shipping_settings', $settings_additional );
+		$settings_conditions = apply_filters( 'rpaefw_conditions_shipping_settings', $settings_conditions );
+
+		$settings = apply_filters( 'rpaefw_shipping_settings', array_merge( $settings_basic, $settings_additional, $settings_conditions ) );
+
+
+		$this->instance_form_fields = $settings;
+
+		foreach ( $settings as $key => $settings ) {
+			$this->{$key} = $this->get_option( $key );
+		}
+
+		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
+	}
+
+	/**
+	 * Print human error only for admin to easy debug errors
+	 *
+	 * @param string $message
+	 */
+	public function maybe_print_error( $message = '' ) {
+		if ( ! current_user_can( 'administrator' ) ) {
+			return;
+		}
+
+		$this->add_rate( array(
+			'id'    => $this->get_rate_id(),
+			'label' => $this->title . ' ' . $message . ' ' . __( 'This message visible only for site administrator.', 'russian-post-and-ems-for-woocommerce' ),
+			'cost'  => 0,
+		) );
+	}
+
+	/**
+	 * Log Some data using WC logger
+	 *
+	 * @param $message
+	 */
+	public function log_it( $message ) {
+		$logger = wc_get_logger();
+		$logger->info( $message, array( 'source' => 'rpaefw' ) );
+	}
+
+	/**
+	 * calculate_shipping function.
+	 *
+	 * @param array $package (default: array())
+	 */
+	public function calculate_shipping( $package = array() ) {
+		global $woocommerce;
+
+		$from         = $this->from ? $this->from : get_option( 'woocommerce_store_postcode' );
+		$to           = '';
+		$type         = $this->type;
+		$dogovor      = get_option( 'rpaefw_dogovor' );
+		$time         = '';
+		$country_code = $package[ 'destination' ][ 'country' ] ? $package[ 'destination' ][ 'country' ] : 'RU';
+		$postal_code  = wc_format_postcode( $package[ 'destination' ][ 'postcode' ], $country_code );
+		$city         = $package[ 'destination' ][ 'city' ];
+
+		// check if default currency is different from RUB
+		$currency = get_option( 'woocommerce_currency' );
+
+		// origin postcode must be set
+		if ( ! $from ) {
+			$this->maybe_print_error( __( 'Post code of sender is required. You can set in store address.', 'russian-post-and-ems-for-woocommerce' ) );
+
+			return;
+		}
+
+		// force display method before initial calculation
+		if ( isset( $this->force_display ) && $this->force_display === 'yes' && ! $postal_code && ! $city ) {
+			$this->add_rate( array(
+				'id'    => $this->get_rate_id(),
+				'label' => $this->title . ( ( trim( $this->force_display_info ) != '' ) ? ' (' . $this->force_display_info . ')' : '' ),
+				'cost'  => 0,
+			) );
+
+			return;
+		} elseif ( ! $postal_code && ! $city ) {
+			return;
+		}
+
+		// if postal code is empty take city
+		if ( $country_code == 'RU' ) {
+			if ( $postal_code != '' ) {
+				// check if post code in a russian post base
+				$validated_post_code = $this->get_default_ops( $postal_code );
+				if ( ! $validated_post_code ) {
+					$this->maybe_print_error( __( 'Post code of customer is not valid. Could not find any matches in a base.', 'russian-post-and-ems-for-woocommerce' ) );
+
+					return;
+				}
+
+				$to = $postal_code;
+			} else {
+				// check if city in a russian post base
+				$validated_city = $this->get_default_ops( $city );
+				if ( ! $validated_city ) {
+					$this->maybe_print_error( __( 'The city is not valid. Could not find any matches in a base.', 'russian-post-and-ems-for-woocommerce' ) );
+
+					return;
+				}
+
+				$to = $validated_city;
+			}
+		}
+
+		// get weight of the cart
+		// normalise weights, unify to g
+		$weight = $woocommerce->cart->cart_contents_weight;
+		$weight = wc_get_weight( $weight, 'g' );
+
+		// plus pack weight
+		$weight = $weight + intval( $this->addpackweight );
+
+		// check weight and set minimum value for Russian Post if it is less than required
+		$weight = $weight < 100 ? 100 : $weight;
+
+		// get total value
+		$total_val = $package[ 'contents_cost' ];
+
+		// additional cost
+		$addcost     = intval( $this->addcost );
+		$addpackcost = intval( $this->addpackcost );
+
+		// check and avoid package overweight before make api request
+		$is_overweight = false;
+		$weight_ranges = array(
+			2000  => array( 5001, 5011, ),
+			2500  => array( 16010, 16020, 47030, 47020 ),
+			5000  => array( 3000, 3010, 3020, 3001, 3011 ),
+			10000 => array( 27030, 27020, 29030, 29020, 28030, 28020, ),
+			14500 => array( 9001, 9011 ),
+			20000 => array( 23030, 23020, 51030, 51020, 34030, 34020, 4031, 4021 ),
+			31500 => array( 24030, 24020, 30030, 30020, 7030, 7020, 41030, 41020, 7031 ),
+			50000 => array( 4030, 4020 ),
+		);
+
+		foreach ( $weight_ranges as $max_val => $types_range ) {
+			if ( in_array( $type, $types_range ) && $weight >= $max_val ) {
+				$is_overweight = true;
+				break;
+			}
+		}
+
+		if ( $is_overweight ) {
+			$this->maybe_print_error( __( 'Overweight is not allowed. To avoid overweights you can limit the range of allowed weights in settings of this shipping method.', 'russian-post-and-ems-for-woocommerce' ) );
+
+			return;
+		}
+
+		// check conditional weights
+		if ( ( $this->cond_min_weight && $weight < intval( $this->cond_min_weight ) ) || ( $this->cond_max_weight && $weight > intval( $this->cond_max_weight ) ) ) {
+			return;
+		}
+
+		// remove method if order has item with specific shipping class
+		if ( isset( $this->cond_has_shipping_class ) && $this->cond_has_shipping_class ) {
+			$found_shipping_classes  = $this->find_shipping_classes( $package );
+			$is_shipping_class_found = false;
+			foreach ( $found_shipping_classes as $shipping_class => $products ) {
+				$shipping_class_term = get_term_by( 'slug', $shipping_class, 'product_shipping_class' );
+				if ( $shipping_class_term && $shipping_class_term->term_id && in_array( $shipping_class_term->term_id, $this->cond_has_shipping_class ) ) {
+					$is_shipping_class_found = true;
+					break;
+				}
+			}
+
+			if ( $is_shipping_class_found ) {
+				return;
+			}
+		}
+
+		// if cost is less than provided in options
+		if ( $this->fixedvalue_disable != '' && intval( $this->fixedvalue_disable ) > 0 && $total_val < $this->fixedvalue_disable ) {
+			return;
+		}
+
+		// fixed value
+		$fixedvalue = $this->fixedpackvalue;
+		if ( $fixedvalue != '' && $total_val > intval( $fixedvalue ) ) {
+			$total_val = $fixedvalue;
+		}
+
+		if ( $currency != 'RUB' ) {
+			$total_val = $this->get_currency_value( $currency, $total_val, false );
+		}
+
+		$base_params = array(
+			'weight' => $weight,
+			'object' => $type,
+			'sumoc'  => $total_val * 100
+		);
+
+		// add additional services
+		if ( isset( $this->service ) && ! empty( $this->service ) ) {
+			$base_params[ 'service' ] = implode( ',', $this->service );
+		}
+
+		if ( $dogovor ) {
+			$base_params[ 'dogovor' ] = $dogovor;
+		}
+
+		// check if shipping goes abroad
+		if ( $country_code != 'RU' ) {
+			if ( ! in_array( $type, array( '4031', '4021', '7031', '5001', '5011', '9001', '9011' ) ) ) {
+				$this->maybe_print_error( __( 'For international shipping you should select international type in settings.', 'russian-post-and-ems-for-woocommerce' ) );
+
+				return;
+			}
+
+			if ( ! $country_code_number = $this->get_country_number( $country_code ) ) {
+				$this->maybe_print_error( __( 'Could not find code number for given country.', 'russian-post-and-ems-for-woocommerce' ) );
+
+				return;
+			}
+
+			$base_params[ 'country' ] = $country_code_number;
+			$base_params[ 'isavia' ]  = 1;
+		} else {
+			$base_params[ 'from' ] = $from;
+			$base_params[ 'to' ]   = $to;
+
+			// check if type requires packaging
+			if ( in_array( $type, array( '27030', '27020', '29030', '29020', '28030', '28020' ) ) ) {
+				$base_params[ 'pack' ] = $this->pack ? $this->pack : 10;
+			}
+		}
+
+		$request = add_query_arg( $base_params, 'https://tariff.pochta.ru/tariff/v1/calculate?json' );
+
+		if ( ! $shipping_cost = get_transient( $request ) ) {
+			if ( ! $shipping_cost = $this->get_data_from_api( $request, 'price' ) ) {
+				return;
+			}
+
+			set_transient( $request, $shipping_cost, DAY_IN_SECONDS );
+		}
+
+		$shipping_class_cost = $this->get_shipping_class_cost( $package );
+
+		// shipping cost + packages cost + additional cost
+		$cost = ceil( $shipping_cost + $addcost + $addpackcost + $shipping_class_cost );
+
+		if ( $currency != 'RUB' ) {
+			$cost = $this->get_currency_value( $currency, $cost );
+		}
+
+		// do not apply if no cost is set
+		if ( ! $cost ) {
+			$this->maybe_print_error( __( 'Error: no cost is set.', 'russian-post-and-ems-for-woocommerce' ) );
+
+			return;
+		}
+
+		// show delivery time
+		if ( $this->time === 'yes' ) {
+			$request = add_query_arg( array(
+				'from'   => $from,
+				'to'     => $to,
+				'object' => $type,
+			), 'https://delivery.pochta.ru/delivery/v1/calculate?json' );
+
+			if ( ! $delivery_time = get_transient( $request ) ) {
+				if ( ! $delivery_time = $this->get_data_from_api( $request, 'time' ) ) {
+					return;
+				}
+
+				set_transient( $request, $delivery_time, DAY_IN_SECONDS * 30 );
+			}
+
+			if ( isset( $this->add_time ) && $this->add_time ) {
+				$delivery_time += intval( $this->add_time );
+			}
+
+			$time = ' (' . sprintf( _n( '%s day', '%s days', $delivery_time, 'russian-post-and-ems-for-woocommerce' ), number_format_i18n( $delivery_time ) ) . ')';
+		}
+
+		$this->add_rate( array(
+			'id'    => $this->get_rate_id(),
+			'label' => $this->title . $time,
+			'cost'  => $cost,
+		) );
+	}
+
+	/**
+	 * Add additional cost based on shipping classes
+	 *
+	 * @param $package
+	 *
+	 * @return int
+	 */
+	public function get_shipping_class_cost( $package ) {
+		$shipping_classes = WC()->shipping()->get_shipping_classes();
+		$cost             = 0;
+
+		if ( ! empty( $shipping_classes ) && isset( $this->class_cost_calc_type ) ) {
+			$found_shipping_classes = $this->find_shipping_classes( $package );
+			$highest_class_cost     = 0;
+
+			foreach ( $found_shipping_classes as $shipping_class => $products ) {
+				// Also handles BW compatibility when slugs were used instead of ids.
+				$shipping_class_term = get_term_by( 'slug', $shipping_class, 'product_shipping_class' );
+				$class_cost_string   = $shipping_class_term && $shipping_class_term->term_id ? $this->get_option( 'class_cost_' . $shipping_class_term->term_id, $this->get_option( 'class_cost_' . $shipping_class, '' ) ) : $this->get_option( 'no_class_cost', '' );
+
+				if ( '' === $class_cost_string ) {
+					continue;
+				}
+
+				$class_cost = $this->evaluate_cost(
+					$class_cost_string,
+					array(
+						'qty'  => array_sum( wp_list_pluck( $products, 'quantity' ) ),
+						'cost' => array_sum( wp_list_pluck( $products, 'line_total' ) ),
+					)
+				);
+
+				if ( 'class' === $this->class_cost_calc_type ) {
+					$cost += $class_cost;
+				} else {
+					$highest_class_cost = $class_cost > $highest_class_cost ? $class_cost : $highest_class_cost;
+				}
+			}
+
+			if ( 'order' === $this->class_cost_calc_type && $highest_class_cost ) {
+				$cost += $highest_class_cost;
+			}
+		}
+
+		return $cost;
+	}
+
+	/**
+	 * Work out fee (shortcode).
+	 *
+	 * @param  array $atts Attributes.
+	 *
+	 * @return string
+	 */
+	public function fee( $atts ) {
+		$atts = shortcode_atts(
+			array(
+				'percent' => '',
+				'min_fee' => '',
+				'max_fee' => '',
+			),
+			$atts,
+			'fee'
+		);
+
+		$calculated_fee = 0;
+
+		if ( $atts[ 'percent' ] ) {
+			$calculated_fee = $this->fee_cost * ( floatval( $atts[ 'percent' ] ) / 100 );
+		}
+
+		if ( $atts[ 'min_fee' ] && $calculated_fee < $atts[ 'min_fee' ] ) {
+			$calculated_fee = $atts[ 'min_fee' ];
+		}
+
+		if ( $atts[ 'max_fee' ] && $calculated_fee > $atts[ 'max_fee' ] ) {
+			$calculated_fee = $atts[ 'max_fee' ];
+		}
+
+		return $calculated_fee;
+	}
+
+
+	/**
+	 * Evaluate a cost from a sum/string.
+	 *
+	 * @param  string $sum Sum of shipping.
+	 * @param  array $args Args.
+	 *
+	 * @return string
+	 */
+	protected function evaluate_cost( $sum, $args = array() ) {
+		include_once WC()->plugin_path() . '/includes/libraries/class-wc-eval-math.php';
+
+		// Allow 3rd parties to process shipping cost arguments.
+		$args           = apply_filters( 'woocommerce_evaluate_shipping_cost_args', $args, $sum, $this );
+		$locale         = localeconv();
+		$decimals       = array(
+			wc_get_price_decimal_separator(),
+			$locale[ 'decimal_point' ],
+			$locale[ 'mon_decimal_point' ],
+			','
+		);
+		$this->fee_cost = $args[ 'cost' ];
+
+		// Expand shortcodes.
+		add_shortcode( 'fee', array( $this, 'fee' ) );
+
+		$sum = do_shortcode(
+			str_replace(
+				array(
+					'[qty]',
+					'[cost]',
+				),
+				array(
+					$args[ 'qty' ],
+					$args[ 'cost' ],
+				),
+				$sum
+			)
+		);
+
+		remove_shortcode( 'fee', array( $this, 'fee' ) );
+
+		// Remove whitespace from string.
+		$sum = preg_replace( '/\s+/', '', $sum );
+
+		// Remove locale from string.
+		$sum = str_replace( $decimals, '.', $sum );
+
+		// Trim invalid start/end characters.
+		$sum = rtrim( ltrim( $sum, "\t\n\r\0\x0B+*/" ), "\t\n\r\0\x0B+-*/" );
+
+		// Do the math.
+		return $sum ? WC_Eval_Math::evaluate( $sum ) : 0;
+	}
+
+	/**
+	 * Finds and returns shipping classes and the products with said class.
+	 *
+	 * @param mixed $package Package of items from cart.
+	 *
+	 * @return array
+	 */
+	public function find_shipping_classes( $package ) {
+		$found_shipping_classes = array();
+
+		foreach ( $package[ 'contents' ] as $item_id => $values ) {
+			if ( $values[ 'data' ]->needs_shipping() ) {
+				$found_class = $values[ 'data' ]->get_shipping_class();
+
+				if ( ! isset( $found_shipping_classes[ $found_class ] ) ) {
+					$found_shipping_classes[ $found_class ] = array();
+				}
+
+				$found_shipping_classes[ $found_class ][ $item_id ] = $values;
+			}
+		}
+
+		return $found_shipping_classes;
+	}
+
+	/**
+	 * Get currency value based on CBR rate
+	 *
+	 * @param $currency
+	 * @param $cost
+	 * @param $from_rub
+	 *
+	 * @return int
+	 */
+	public function get_currency_value( $currency, $cost, $from_rub = true ) {
+		// check if third party plugins are installed
+		if ( in_array( 'woocommerce-currency-switcher/index.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
+			$woocs = get_option( 'woocs' );
+
+			if ( $woocs && is_array( $woocs ) && isset( $woocs[ 'RUB' ] ) ) {
+				if ( $from_rub ) {
+					return round( 1 / $woocs[ 'RUB' ][ 'rate' ] * $cost );
+				} else {
+					return round( $woocs[ 'RUB' ][ 'rate' ] * $cost );
+				}
+			}
+		}
+
+		if ( ! $rates = $this->get_currency_rates_from_api() ) {
+			$this->maybe_print_error( __( 'Cannot get currency rates from api.', 'russian-post-and-ems-for-woocommerce' ) );
+
+			return false;
+		}
+
+		$valute_obj = null;
+
+		// find obj for provided currency
+		foreach ( $rates->Valute as $valute ) {
+			if ( $valute->CharCode == $currency ) {
+				$valute_obj = $valute;
+				break;
+			}
+		}
+
+		// if no match is found return false
+		if ( ! $valute_obj ) {
+			$this->maybe_print_error( __( 'Could not find currency code in a base.', 'russian-post-and-ems-for-woocommerce' ) );
+
+			return false;
+		}
+
+		$rate = str_replace( ',', '.', $valute_obj->Value );
+
+		if ( $from_rub ) {
+			return round( 1 / $rate * $cost );
+		} else {
+			return round( $rate * $cost );
+		}
+	}
+
+	/**
+	 * Get and update currency rate
+	 *
+	 * @return bool|mixed|SimpleXMLElement
+	 */
+	public function get_currency_rates_from_api() {
+		$transient_name = 'rpaefw_currency_rates';
+
+		if ( ! $rates = get_transient( $transient_name ) ) {
+			// try to get rates from CBR
+			if ( ! $rates = $this->get_data_from_api( 'https://www.cbr.ru/scripts/XML_daily_eng.asp', 'currency' ) ) {
+				return false;
+			}
+
+			set_transient( $transient_name, $rates, DAY_IN_SECONDS );
+		}
+
+		// parce rates
+		$rates = simplexml_load_string( $rates );
+
+		return $rates;
+	}
+
+	/**
+	 * Try to find destination based on provided type of address
+	 *
+	 * @param $to
+	 *
+	 * @return bool
+	 */
+	public function get_default_ops( $to ) {
+		// in case fopen is not working
+		if ( ! ini_get( 'allow_url_fopen' ) ) {
+			return true;
+		}
+
+		if ( preg_match( '/^[1-9][0-9]{5}$/', $to ) ) {
+			// if it is a post code
+			if ( $arr = $this->arr_from_txt( 'postcalc_light_post_indexes.txt', $to ) ) {
+				return true;
+			}
+		} else {
+			// any other symbols
+			if ( $arr = $this->arr_from_txt( 'postcalc_light_cities.txt', $to ) ) {
+				// return first match post index based on city
+				return array_values( $arr )[ 0 ];
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Try to find destination based on provided type of address
+	 *
+	 * @param $src_txt
+	 * @param $search
+	 *
+	 * @return mixed
+	 */
+	public function arr_from_txt( $src_txt, $search = '' ) {
+		$arr       = array();
+		$config_cs = 'utf-8';
+
+		if ( ! $search ) {
+			return $arr;
+		}
+
+		// source - index file
+		$src_txt = plugin_dir_url( __FILE__ ) . 'post-calc/' . $src_txt;
+
+		$search = mb_convert_case( $search, MB_CASE_LOWER, $config_cs );
+
+		$search = preg_replace( '/,/', '', $search );
+		$search = explode( ' ', $search )[ 0 ];
+
+		if ( is_ssl() ) {
+			$contex_options = array(
+				"ssl" => array(
+					"verify_peer"      => false,
+					"verify_peer_name" => false,
+				),
+			);
+			$context        = stream_context_create( $contex_options );
+			$fp             = fopen( $src_txt, 'r', false, $context );
+		} else {
+			$fp = fopen( $src_txt, 'r' );
+		}
+
+		if ( ! $fp ) {
+			return $arr;
+		}
+
+		while ( ( $line = fgets( $fp ) ) !== false ) {
+			list( $key, $value ) = explode( "\t", $line );
+			if ( mb_stripos( $key, $search, 0, $config_cs ) === 0 ) {
+				$arr[ $key ] = trim( $value );
+				break;
+			}
+		}
+		fclose( $fp );
+
+		return $arr;
+	}
+
+	/**
+	 * Connecting to the api server and get price
+	 *
+	 * @param $request
+	 * @param $get
+	 *
+	 * @return mixed
+	 */
+	public function get_data_from_api( $request, $get ) {
+		$remote_response = wp_remote_get( $request, [ 'timeout' => 15 ] );
+		$this->log_it( 'Запрос для: ' . $request );
+
+		if ( is_wp_error( $remote_response ) ) {
+			$this->maybe_print_error( 'Ошибка подключения к серверу для получения "' . $get . '". ' . $remote_response->get_error_message() );
+
+			return false;
+		}
+
+		if ( $response_code = wp_remote_retrieve_response_code( $remote_response ) !== 200 ) {
+			$this->maybe_print_error( 'Ошибка запроса для "' . $get . '". Код ответа сервера:' . $response_code . ' ' . wp_remote_retrieve_body( $remote_response ) );
+
+			return false;
+		}
+
+		$body = wp_remote_retrieve_body( $remote_response );
+
+		if ( $get === 'price' || $get === 'time' ) {
+			$response = json_decode( $body, true );
+
+			if ( isset( $response[ 'error' ] ) ) {
+				$this->maybe_print_error( 'Ошибка: ' . $response[ 'error' ][ 0 ] );
+
+				return false;
+			}
+
+			if ( $get === 'price' ) {
+				return $response[ 'paynds' ] / 100;
+			} else {
+				return $response[ 'delivery' ][ 'max' ];
+			}
+		}
+
+		if ( $get === 'currency' ) {
+			return $body;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Return country number for Russian Post api base
+	 *
+	 * @param $code
+	 *
+	 * @return false|int|string
+	 */
+	public function get_country_number( $code ) {
+		$countries = array(
+			'AU' => '36',
+			'AT' => '40',
+			'AZ' => '31',
+			'AX' => '949',
+			'AL' => '8',
+			'DZ' => '12',
+			'AS' => '16',
+			'AI' => '660',
+			'AO' => '24',
+			'AD' => '20',
+			'AQ' => '10',
+			'AG' => '28',
+			'AR' => '32',
+			'AM' => '51',
+			'AW' => '533',
+			'AF' => '4',
+			'BS' => '44',
+			'BD' => '50',
+			'BB' => '52',
+			'BH' => '48',
+			'BY' => '112',
+			'BZ' => '84',
+			'BE' => '56',
+			'BJ' => '204',
+			'BM' => '60',
+			'BG' => '100',
+			'BO' => '68',
+			'BQ' => '535',
+			'BA' => '70',
+			'BW' => '72',
+			'BR' => '76',
+			'VG' => '92',
+			'BN' => '96',
+			'BF' => '854',
+			'BI' => '108',
+			'BT' => '64',
+			'VU' => '548',
+			'VA' => '336',
+			'GB' => '826',
+			'HU' => '348',
+			'VE' => '862',
+			'VI' => '850',
+			'UM' => '581',
+			'TL' => '626',
+			'VN' => '704',
+			'GA' => '266',
+			'HT' => '332',
+			'GY' => '328',
+			'GM' => '270',
+			'GH' => '288',
+			'GP' => '312',
+			'GT' => '320',
+			'GN' => '324',
+			'GW' => '624',
+			'DE' => '276',
+			'GG' => '831',
+			'GI' => '292',
+			'HN' => '340',
+			'HK' => '344',
+			'GD' => '308',
+			'GL' => '304',
+			'GR' => '300',
+			'GE' => '268',
+			'GU' => '316',
+			'DK' => '208',
+			'JE' => '832',
+			'DJ' => '262',
+			'DM' => '212',
+			'DO' => '214',
+			'EG' => '818',
+			'ZM' => '894',
+			'EH' => '732',
+			'ZW' => '716',
+			'IL' => '376',
+			'IN' => '356',
+			'ID' => '360',
+			'JO' => '400',
+			'IQ' => '368',
+			'IR' => '364',
+			'IE' => '372',
+			'IS' => '352',
+			'ES' => '724',
+			'IT' => '380',
+			'YE' => '887',
+			'CV' => '132',
+			'KZ' => '398',
+			'KY' => '136',
+			'KH' => '116',
+			'CM' => '120',
+			'CA' => '124',
+			'QA' => '634',
+			'KE' => '404',
+			'CY' => '196',
+			'KI' => '296',
+			'CN' => '156',
+			'CC' => '166',
+			'CO' => '170',
+			'KM' => '174',
+			'CG' => '180',
+			'CD' => '178',
+			'CR' => '188',
+			'CI' => '384',
+			'CU' => '192',
+			'KW' => '414',
+			'KG' => '417',
+			'CW' => '531',
+			'LA' => '418',
+			'LV' => '428',
+			'LS' => '426',
+			'LR' => '430',
+			'LB' => '422',
+			'LY' => '434',
+			'LT' => '440',
+			'LI' => '438',
+			'LU' => '442',
+			'MU' => '480',
+			'MR' => '478',
+			'MG' => '450',
+			'YT' => '175',
+			'MO' => '446',
+			'MK' => '807',
+			'MW' => '454',
+			'MY' => '458',
+			'ML' => '466',
+			'MV' => '462',
+			'MT' => '470',
+			'MA' => '504',
+			'MQ' => '474',
+			'MH' => '584',
+			'MX' => '484',
+			'FM' => '583',
+			'MZ' => '508',
+			'MD' => '498',
+			'MC' => '492',
+			'MN' => '496',
+			'MS' => '500',
+			'MM' => '104',
+			'NA' => '516',
+			'NR' => '520',
+			'NP' => '524',
+			'NE' => '562',
+			'NG' => '566',
+			'NL' => '528',
+			'NI' => '558',
+			'NU' => '570',
+			'NZ' => '554',
+			'NC' => '540',
+			'NO' => '578',
+			'AE' => '784',
+			'OM' => '784',
+			'BV' => '74',
+			'IM' => '833',
+			'NF' => '574',
+			'CX' => '162',
+			'SH' => '906',
+			'HM' => '334',
+			'CK' => '184',
+			'PK' => '586',
+			'PW' => '585',
+			'PS' => '275',
+			'PA' => '591',
+			'PG' => '598',
+			'PY' => '600',
+			'PE' => '604',
+			'PN' => '612',
+			'PL' => '616',
+			'PT' => '620',
+			'PR' => '630',
+			'RE' => '638',
+			'RW' => '646',
+			'RO' => '642',
+			'SV' => '222',
+			'WS' => '882',
+			'SM' => '674',
+			'ST' => '678',
+			'SA' => '682',
+			'SZ' => '748',
+			'KP' => '410',
+			'MP' => '580',
+			'SC' => '690',
+			'BL' => '652',
+			'SX' => '534',
+			'MF' => '534',
+			'PM' => '666',
+			'SN' => '686',
+			'VC' => '670',
+			'KN' => '659',
+			'LC' => '662',
+			'RS' => '662',
+			'SG' => '702',
+			'SY' => '760',
+			'SK' => '760',
+			'SI' => '705',
+			'US' => '840',
+			'SB' => '90',
+			'SO' => '706',
+			'SD' => '729',
+			'SR' => '729',
+			'SL' => '694',
+			'TJ' => '762',
+			'TW' => '158',
+			'TH' => '764',
+			'TZ' => '834',
+			'TC' => '796',
+			'TG' => '768',
+			'TK' => '772',
+			'TO' => '776',
+			'TT' => '780',
+			'TV' => '798',
+			'TN' => '788',
+			'TM' => '795',
+			'TR' => '792',
+			'UG' => '800',
+			'UZ' => '860',
+			'UA' => '804',
+			'WF' => '876',
+			'UY' => '858',
+			'FO' => '234',
+			'FJ' => '242',
+			'PH' => '608',
+			'FI' => '246',
+			'FK' => '238',
+			'FR' => '250',
+			'GF' => '254',
+			'PF' => '258',
+			'TF' => '260',
+			'HR' => '258',
+			'CF' => '140',
+			'TD' => '140',
+			'ME' => '499',
+			'CZ' => '203',
+			'CL' => '152',
+			'CH' => '756',
+			'SE' => '752',
+			'SJ' => '744',
+			'LK' => '144',
+			'EC' => '218',
+			'GQ' => '226',
+			'ER' => '232',
+			'EE' => '233',
+			'ET' => '231',
+			'ZA' => '710',
+			'GS' => '239',
+			'KR' => '410',
+			'SS' => '728',
+			'JM' => '388',
+			'JP' => '392',
+		);
+
+		return isset( $countries[ $code ] ) ? $countries[ $code ] : false;
+	}
+
+}

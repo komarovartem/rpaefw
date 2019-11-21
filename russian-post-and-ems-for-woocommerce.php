@@ -43,7 +43,10 @@ class RPAEFW {
 		add_filter( 'woocommerce_get_sections_shipping', array( $this, 'settings_page' ) );
 		add_filter( 'woocommerce_get_settings_shipping', array( $this, 'settings' ), 10, 2 );
 
-		add_action( 'activate_russian-post-and-ems-for-woocommerce/russian-post-and-ems-for-woocommerce.php', [ $this, 'old_version_support' ] );
+		add_action( 'activate_russian-post-and-ems-for-woocommerce/russian-post-and-ems-for-woocommerce.php', [
+			$this,
+			'old_version_support'
+		] );
 	}
 
 	/**
@@ -238,20 +241,43 @@ class RPAEFW {
 
 	public function settings( $settings, $current_section ) {
 		if ( $current_section == 'rpaefw' ) {
-			$settings = array(
-				array(
+			$settings = [
+				[
 					'title' => esc_html__( 'Russian Post', 'russian-post-and-ems-for-woocommerce' ),
 					'desc'  => esc_html__( 'Title', 'russian-post-and-ems-for-woocommerce' ),
 					'type'  => 'title',
 					'id'    => 'rpaefw_shipping_options'
-				),
-				array(
+				],
+				[
 					'title' => 'Регион-ИНН-Договор',
 					'desc'  => '<br> Укажите данные если вы используете методы предназначеные для корпоративных клиентов.  Договор, заключенный между корпоративным клиентом и ФГУП “Почта России”. Строка состоит из кода региона по Конституции РФ, ИНН предприятия и номера договора, разделенных знаком “-” (дефис).',
 					'type'  => 'text',
 					'id'    => 'rpaefw_dogovor'
-				),
-			);
+				],
+			];
+
+			if ( ! $this::is_pro_active() ) {
+				$settings[] = [
+					'title'    => 'Токен авторизации приложения',
+					'desc'     => '<br> Доступно только в PRO версии. <br> Для интеграции с API Онлайн-сервиса «Отправка». Токен можно узнать в настройках <a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">личного кабинета</a>',
+					'type'     => 'text',
+					'id'       => uniqid(),
+					'custom_attributes' => [
+						'disabled' => true,
+					]
+
+				];
+				$settings[] = [
+					'title'    => 'Ключ авторизации пользователя',
+					'desc'     => '<br> Доступно только в PRO версии. <br> Для интеграции с API Онлайн-сервиса «Отправка». Вы можете сгенерировать ключ авторизации <a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">здесь</a>',
+					'type'     => 'text',
+					'id'       => uniqid(),
+					'custom_attributes' => [
+						'disabled' => true,
+					]
+				];
+			}
+
 
 			$settings = apply_filters( 'rpaefw_settings', $settings );
 
@@ -316,6 +342,14 @@ class RPAEFW {
 		];
 
 		return $old_types[ $old_value ];
+	}
+
+	public static function is_pro_active() {
+		if ( in_array( 'russian-post-and-ems-pro-for-woocommerce/russian-post-and-ems-pro-for-woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
+			return true;
+		}
+
+		return false;
 	}
 }
 

@@ -16,11 +16,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		);
 
 		$settings_basic      = [
-			'basic' => array(
+			'basic'      => array(
 				'title' => esc_html__( 'Basic Settings', 'russian-post-and-ems-for-woocommerce' ),
 				'type'  => 'title',
 			),
-			'title' => array(
+			'title'      => array(
 				'title'             => esc_html__( 'Title', 'russian-post-and-ems-for-woocommerce' ),
 				'description'       => esc_html__( 'This title will be displayed in checkout', 'russian-post-and-ems-for-woocommerce' ),
 				'type'              => 'text',
@@ -29,12 +29,12 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					'required' => 'required'
 				),
 			),
-			'from'  => array(
+			'from'       => array(
 				'title'       => esc_html__( 'Оrigin Postcode', 'russian-post-and-ems-for-woocommerce' ),
-				'description' => esc_html__( 'Optional. 6-digit code of the sender. By default equals to the store postcode. You can specify different from store address one if there is a need.', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Optional. Postcode of the sender. By default equals to the store postcode. You can specify different from store address one if there is a need.', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'number',
 			),
-			'type'  => array(
+			'type'       => array(
 				'title'       => esc_html__( 'Type', 'russian-post-and-ems-for-woocommerce' ),
 				'description' => esc_html__( 'Select shipping type (in brackets displayed the max allowed weight of shipping method). If this method associated with international shipping zone, make sure you select international type of shipping. If you want to use shipping types for corporate clients you need to add additional info in Russian post plugin settings.', 'russian-post-and-ems-for-woocommerce' ) . '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '">' . esc_html__( 'Russian Post Settings', 'russian-post-and-ems-for-woocommerce' ) . '</a>',
 				'type'        => 'select',
@@ -80,7 +80,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					9011  => 'Международные отправления. Мешок М заказной  (14.5кг)',
 				)
 			),
-			'pack'  => array(
+			'pack'       => array(
 				'title'       => esc_html__( 'Package Type', 'russian-post-and-ems-for-woocommerce' ),
 				'description' => esc_html__( 'Only for shipping types: Посылка (стандарт, экспресс, курьер EMS) package is required. Note there are weight limitations for packages (in brackets displayed the max allowed weight).', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'select',
@@ -98,6 +98,81 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					'41' => 'Пакет полиэтиленовый «ХL»  (7кг)',
 				)
 			),
+			'service'    => [
+				'type'              => 'multiselect',
+				'class'             => 'wc-enhanced-select',
+				'title'             => __( 'Services', 'russian-post-and-ems-for-woocommerce' ),
+				'custom_attributes' => [
+					'data-placeholder' => __( 'Additional services', 'russian-post-and-ems-for-woocommerce' )
+				],
+				'description'       => __( 'Please note that different types of shipping support different types of services. To get more information regardless shipping types and services check official websites.', 'russian-post-and-ems-for-woocommerce' ) . ' <a href="https://www.pochta.ru/support/post-rules/sending-types" target="_blank">' . __( 'Russian Post services and rules', 'russian-post-and-ems-for-woocommerce' ) . '</a> ' . __( 'or on the Russian Post service tariffing website', 'russian-post-and-ems-for-woocommerce' ) . ' <a href="https://tariff.pochta.ru" target="_blank">tariff.pochta.ru</a>',
+				'options'           => [
+					1  => 'Простое уведомление о вручении',
+					2  => 'Заказное уведомление о вручении',
+					4  => 'Отметка Осторожно/Хрупкая',
+					6  => 'Громоздкая посылка',
+					7  => 'Доставка нарочным',
+					8  => 'Вручение лично в руки',
+					9  => 'Доставка документов',
+					10 => 'Доставка товаров',
+					12 => 'Нестандартный размер',
+					14 => 'Страхование отправления',
+					20 => 'СМС-уведомление о прибытии в отделение',
+					21 => 'СМС-уведомление о вручении',
+					22 => 'Проверка соответствия вложения описи',
+					23 => 'Составление описи вложения',
+					24 => 'Оплата наложенного платежа отправителем',
+					25 => 'Таможенный сбор',
+					26 => 'Доставка курьером',
+					27 => 'Упаковка Почта России',
+					28 => 'Корпоративный клиент Почта России',
+					29 => 'Доставка почтового перевода на дом',
+					30 => 'Уведомление о вручении почтового перевода',
+					31 => 'Заверительный пакет',
+					32 => 'Гарантия сохранности',
+					33 => 'Отчёт о недоставленных отправлениях',
+					34 => 'Нанесение ШК',
+					35 => 'Упаковка вложений',
+					36 => 'Нанесение стикера',
+					37 => 'Перевозка и сдача',
+					38 => 'Проверка комплектности',
+					39 => 'Заявление о возврате, изменении или исправлении адреса',
+					40 => 'Доставка в населённый пункт, не имеющий телеграфной и факсимильной связи',
+					41 => 'Пакет SMS уведомлений отправителю при единичном приеме',
+					42 => 'Пакет SMS уведомлений получателю при единичном приеме',
+					43 => 'Пакет SMS уведомлений отправителю при партионном приеме',
+					44 => 'Пакет SMS уведомлений получателю при партионном приеме',
+					45 => 'Пролонгация договора',
+					51 => 'Правительственное',
+					52 => 'Воинское',
+					53 => 'Служебное',
+					54 => 'Судебное',
+					55 => 'Президентское',
+					56 => 'Кредитное',
+					57 => 'Межоператорское',
+					58 => 'Вручение в ОПС',
+					59 => 'Предпочтовая подготовка',
+					60 => 'Агентские функции третьим лицам',
+					61 => 'Доставка по звонку',
+					62 => 'Электронное уведомление о вручении',
+					63 => 'Обслуживание консолидаторов',
+					64 => 'Пакет SMS-сервис',
+					65 => 'Курьерский сбор',
+					66 => 'Возврат сопроводительных документов',
+					67 => 'Выдача через АПС',
+					68 => 'Доставка и вручение почтальонами мелких пакетов на дому',
+					70 => 'Наличие индивидуального договора с предприятием почтовой связи',
+				]
+			],
+			'tax_status' => [
+				'title'   => __( 'Tax status', 'russian-post-and-ems-for-woocommerce' ),
+				'type'    => 'select',
+				'default' => 'taxable',
+				'options' => [
+					'taxable' => __( 'Taxable', 'russian-post-and-ems-for-woocommerce' ),
+					'none'    => _x( 'None', 'Tax status', 'russian-post-and-ems-for-woocommerce' ),
+				]
+			]
 		];
 		$settings_additional = [
 			'add_settings'   => array(
@@ -133,7 +208,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'title'       => esc_html__( 'Delivery Time', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'checkbox',
 				'label'       => esc_html__( 'Show time of delivery.', 'russian-post-and-ems-for-woocommerce' ),
-				'description' => esc_html__( 'Displayed next to the title. Note, it does not work for international shipping.', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Displayed next to the title. Note, it does not work for international shipping. The time calculated via official Russian Post service.', 'russian-post-and-ems-for-woocommerce' ) . '<a href="https://delivery.pochta.ru/" target="_blank">delivery.pochta.ru</a>',
 				'default'     => 'no',
 			),
 		];
@@ -162,6 +237,75 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'type'        => 'number',
 			),
 		];
+
+		if ( ! RPAEFW::is_pro_active() ) {
+			$shipping_classes = WC()->shipping()->get_shipping_classes();
+
+			$settings_additional[ uniqid() ] = [
+				'type'        => 'number',
+				'disabled'    => true,
+				'description' => 'Доступно только в PRO версии. <br>Опционально. Укажите на сколько дней необходимо увеличить отображаемое время доставки',
+			];
+
+			$settings_additional[ uniqid() ] = [
+				'title'       => 'Показывать до расчета',
+				'type'        => 'checkbox',
+				'disabled'    => true,
+				'label'       => 'Отображать метод до того как введен адрес доставки',
+				'description' => 'Доступно только в PRO версии. <br>По умолчанию метод будет отображаться только после того как произойдет расчет доставки на основе введеного адреса',
+				'default'     => 'no',
+			];
+
+			if ( ! empty( $shipping_classes ) ) {
+				$settings_additional[ uniqid() ] = [
+					'title'       => 'Для спец. классов доставки',
+					'description' => 'Доступно только в PRO версии. <br>Скрыть метод если заказ содержит хотя бы один товар с выбранным классом доставки.',
+					'type'        => 'text',
+					'disabled'    => true,
+				];
+
+				$settings_conditions[ uniqid() ] = array(
+					'title'       => 'Дополнительные расходы для классов доставки',
+					'type'        => 'title',
+					'default'     => '',
+					'description' => 'Эти расходы могут быть дополнительно добавлены на основе <a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=classes' ) . '">классов доставки</a>.'
+				);
+
+				foreach ( $shipping_classes as $shipping_class ) {
+					if ( ! isset( $shipping_class->term_id ) ) {
+						continue;
+					}
+
+					$settings_conditions[ uniqid() ] = array(
+						'title'       => sprintf( '"%s" стоимость доставки класса', esc_html( $shipping_class->name ) ),
+						'type'        => 'text',
+						'placeholder' => 'N/A',
+						'disabled'    => true,
+						'description' => 'Доступно только в PRO версии.'
+					);
+				}
+
+				$settings_conditions[ uniqid() ] = array(
+					'title'             => 'Стоимости доставки без класса',
+					'type'              => 'text',
+					'placeholder'       => 'N/A',
+					'sanitize_callback' => array( $this, 'sanitize_cost' ),
+					'disabled'          => true,
+					'description'       => 'Доступно только в PRO версии.'
+				);
+
+				$settings_conditions[ uniqid() ] = array(
+					'title'       => 'Тип расчета',
+					'type'        => 'select',
+					'disabled'    => true,
+					'options'     => array(
+						'class' => 'За класс: платная доставка для каждого класса доставки отдельно',
+						'order' => 'За заказ: платная доставка для самого дорогого класса доставки',
+					),
+					'description' => 'Доступно только в PRO версии.'
+				);
+			}
+		}
 
 		$settings_basic      = apply_filters( 'rpaefw_basic_shipping_settings', $settings_basic );
 		$settings_additional = apply_filters( 'rpaefw_additional_shipping_settings', $settings_additional );
@@ -309,14 +453,14 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 		}
 
-		if ( $is_overweight ) {
-			$this->maybe_print_error( __( 'Overweight is not allowed. To avoid overweights you can limit the range of allowed weights in settings of this shipping method.', 'russian-post-and-ems-for-woocommerce' ) );
-
+		// check conditional weights
+		if ( ( $this->cond_min_weight && $weight < intval( $this->cond_min_weight ) ) || ( $this->cond_max_weight && $weight > intval( $this->cond_max_weight ) ) ) {
 			return;
 		}
 
-		// check conditional weights
-		if ( ( $this->cond_min_weight && $weight < intval( $this->cond_min_weight ) ) || ( $this->cond_max_weight && $weight > intval( $this->cond_max_weight ) ) ) {
+		if ( $is_overweight ) {
+			$this->maybe_print_error( __( 'Overweight is not allowed. To avoid overweight you can limit the range of allowed weights in settings of this shipping method.', 'russian-post-and-ems-for-woocommerce' ) );
+
 			return;
 		}
 
@@ -364,7 +508,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		if ( $dogovor ) {
-			$base_params[ 'dogovor' ] = $dogovor;
+			$base_params[ 'dogovor' ] = trim( $dogovor );
 		}
 
 		// check if shipping goes abroad
@@ -784,13 +928,13 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$this->log_it( 'Запрос для: ' . $request );
 
 		if ( is_wp_error( $remote_response ) ) {
-			$this->maybe_print_error( 'Ошибка подключения к серверу для получения "' . $get . '". ' . $remote_response->get_error_message() );
+			$this->maybe_print_error( __( 'Server connection error to get', 'russian-post-and-ems-for-woocommerce' ) . '"' . $get . '". ' . $remote_response->get_error_message() );
 
 			return false;
 		}
 
 		if ( $response_code = wp_remote_retrieve_response_code( $remote_response ) !== 200 ) {
-			$this->maybe_print_error( 'Ошибка запроса для "' . $get . '". Код ответа сервера:' . $response_code . ' ' . wp_remote_retrieve_body( $remote_response ) );
+			$this->maybe_print_error( __( 'Request error for', 'russian-post-and-ems-for-woocommerce' ) . '"' . $get . '". CODE: ' . $response_code . ' ' . wp_remote_retrieve_body( $remote_response ) );
 
 			return false;
 		}

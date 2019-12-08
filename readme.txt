@@ -3,7 +3,7 @@ Contributors: artemkomarov
 Tags: woocommerce, woocommerce shipping, ecommerce, shipping
 Requires at least: 4.4
 Tested up to: 5.1.1
-Stable tag: 1.2
+Stable tag: 1.2.6
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -11,7 +11,7 @@ The plugin allows you to automatically calculate shipping costs of "Russian Post
 
 == Description ==
 
-The plugin allows you to automatically calculate shipping costs of "Russian Post" or "EMS" using [postcalc.ru](http://www.postcalc.ru).
+The plugin allows you to automatically calculate shipping costs of "Russian Post" or "EMS" using official API [tariff.pochta.ru](https://tariff.pochta.ru/).
 
 * Calculate shipping costs based on weight and cost of cart
 * Display time of delivery for shipments
@@ -36,21 +36,9 @@ Then create new Shipping Zone and add Russian Post as a method.
 
 == Frequently Asked Questions ==
 
-= What kind of project - postcalc.ru =
+= How accurate is this plugin? =
 
-It is a special non-profit project of one person from Moscow. This project is not related to With the Russian Post or EMS either technically or as something else.
-
-= How postcalc.ru accurate counts? =
-
-As accurately as possible but there may be minor errors.
-
-= Paid access =
-
-Initially, the service is free, but if the number of requests from your Internet project regularly exceed 500 requests per day - you need to switch to [paid access](http://www.postcalc.ru/faq.html#commercial).
-
-= Well, I still have questions... =
-
-here is [more](http://www.postcalc.ru/faq.html)
+The plugin by itself has no methods to calculate the shipping price. All data comes from official Russian Post API tariff.pochta.ru
 
 
 == Screenshots ==
@@ -58,6 +46,23 @@ here is [more](http://www.postcalc.ru/faq.html)
 1. Основные настройки
 
 == Changelog ==
+
+= 1.2.6 =
+
+* Исправлена ошибка с ЕКОМ упаковкой
+* Исправлено округление суммы для отправлений c объявленой стоимостью
+* Добавлены все коды дополнительных услуг для внутренних и международных отправлений
+
+= 1.2.5 =
+
+* Переход на оффицинальный API Почты России
+* Добавлены методы для расчета отправлений без объявленной ценности
+* Добавлены методы для корпоративных клиентов ПР
+* Добавлены опции дополнительных услуг
+* Добавлены опция налогообложения
+* Добавлена возможность ограничивать расчет заказа по весу
+* Добавлены сообщения о возможных ошибках для администратора
+* Добавлено логирование запросов плагина
 
 = 1.2 =
 

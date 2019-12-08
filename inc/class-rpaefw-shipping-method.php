@@ -36,7 +36,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			),
 			'type'       => array(
 				'title'       => esc_html__( 'Type', 'russian-post-and-ems-for-woocommerce' ),
-				'description' => esc_html__( 'Select shipping type (in brackets displayed the max allowed weight of shipping method). If this method associated with international shipping zone, make sure you select international type of shipping. If you want to use shipping types for corporate clients you need to add additional info in Russian post plugin settings.', 'russian-post-and-ems-for-woocommerce' ) . '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '">' . esc_html__( 'Russian Post Settings', 'russian-post-and-ems-for-woocommerce' ) . '</a>',
+				'description' => esc_html__( 'Select shipping type (in brackets displayed the max allowed weight of shipping method). If this method associated with international shipping zone, make sure you select international type of shipping. If you want to use shipping types for corporate clients you need to add additional info in Russian post plugin settings.', 'russian-post-and-ems-for-woocommerce' ) . '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '">' . esc_html__( 'Russian Post Settings', 'russian-post-and-ems-for-woocommerce' ) . '</a><br><br>' . sprintf( esc_html__( 'If you wish to use COD for some shipping methods make sure you have installed and activated the %s COD for Russian Post and EMS plugin.%s This plugin automatically recalculate the shipping fee based on order cost and synchronize this payment method with PRO features of the plugin', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://ru.wordpress.org/plugins/cash-on-delivery-of-russian-post-or-ems-for-woocommerce/#description" target="_blank">', '</a>' ),
 				'type'        => 'select',
 				'default'     => 27030,
 				'options'     => array(
@@ -63,12 +63,20 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					24020 => 'Курьер онлайн с объявленной ценностью (31.5кг)',
 					30030 => 'Бизнес курьер (31.5кг)',
 					30020 => 'Бизнес курьер с объявленной ценностью (31.5кг)',
+					31030 => 'Бизнес курьер экспресс (31.5кг)',
+					31020 => 'Бизнес курьер экспресс с объявленной ценностью (31.5кг)',
+					39000 => 'КПО-стандарт',
+					40000 => 'КПО-эконом',
+					53030 => 'ЕКОМ обыкновенный (15 кг)',
+					53070 => 'ЕКОМ с обязательным платежом (15 кг)',
 					7030  => 'EMS (31.5кг)',
 					7020  => 'EMS с объявленной ценностью (31.5кг)',
 					41030 => 'EMS РТ (31.5кг)',
 					41020 => 'EMS РТ с объявленной ценностью (31.5кг)',
 					34030 => 'EMS оптимальное (20кг)',
 					34020 => 'EMS оптимальное с объявленной ценностью (20кг)',
+					52030 => 'EMS Тендер обыкновенное ',
+					52020 => 'EMS Тендер с объявленной ценностью',
 					4031  => 'Международные отправления. Посылка обыкновенная (20кг)',
 					4021  => 'Международные отправления. Посылка с объявленной ценностью (20кг)',
 					7031  => 'Международные отправления. EMS обыкновенное (31.5кг)',
@@ -86,16 +94,17 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'type'        => 'select',
 				'default'     => '10',
 				'options'     => array(
-					'10' => 'Коробка «S» (10кг)',
-					'11' => 'Пакет полиэтиленовый «S» (7кг)',
-					'12' => 'Конверт с воздушно-пузырчатой пленкой «S» (2кг)',
-					'20' => 'Коробка «М» (10кг)',
-					'21' => 'Пакет полиэтиленовый «М»  (7кг)',
-					'22' => 'Конверт с воздушно-пузырчатой пленкой «М» (2кг)',
-					'30' => 'Коробка «L» (10кг)',
-					'31' => 'Пакет полиэтиленовый «L»  (7кг)',
-					'40' => 'Коробка «ХL» (10кг)',
-					'41' => 'Пакет полиэтиленовый «ХL»  (7кг)',
+					10 => 'Коробка «S» (10кг)',
+					11 => 'Пакет полиэтиленовый «S» (7кг)',
+					12 => 'Конверт с воздушно-пузырчатой пленкой «S» (2кг)',
+					20 => 'Коробка «М» (10кг)',
+					21 => 'Пакет полиэтиленовый «М»  (7кг)',
+					22 => 'Конверт с воздушно-пузырчатой пленкой «М» (2кг)',
+					30 => 'Коробка «L» (10кг)',
+					31 => 'Пакет полиэтиленовый «L»  (7кг)',
+					40 => 'Коробка «ХL» (10кг)',
+					41 => 'Пакет полиэтиленовый «ХL»  (7кг)',
+					99 => 'Нестандартная упаковка',
 				)
 			),
 			'service'    => [
@@ -107,61 +116,83 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				],
 				'description'       => __( 'Please note that different types of shipping support different types of services. To get more information regardless shipping types and services check official websites.', 'russian-post-and-ems-for-woocommerce' ) . ' <a href="https://www.pochta.ru/support/post-rules/sending-types" target="_blank">' . __( 'Russian Post services and rules', 'russian-post-and-ems-for-woocommerce' ) . '</a> ' . __( 'or on the Russian Post service tariffing website', 'russian-post-and-ems-for-woocommerce' ) . ' <a href="https://tariff.pochta.ru" target="_blank">tariff.pochta.ru</a>',
 				'options'           => [
-					1  => 'Простое уведомление о вручении',
-					2  => 'Заказное уведомление о вручении',
-					4  => 'Отметка Осторожно/Хрупкая',
-					6  => 'Громоздкая посылка',
-					7  => 'Доставка нарочным',
-					8  => 'Вручение лично в руки',
-					9  => 'Доставка документов',
-					10 => 'Доставка товаров',
-					12 => 'Нестандартный размер',
-					14 => 'Страхование отправления',
-					20 => 'СМС-уведомление о прибытии в отделение',
-					21 => 'СМС-уведомление о вручении',
-					22 => 'Проверка соответствия вложения описи',
-					23 => 'Составление описи вложения',
-					24 => 'Оплата наложенного платежа отправителем',
-					25 => 'Таможенный сбор',
-					26 => 'Доставка курьером',
-					27 => 'Упаковка Почта России',
-					28 => 'Корпоративный клиент Почта России',
-					29 => 'Доставка почтового перевода на дом',
-					30 => 'Уведомление о вручении почтового перевода',
-					31 => 'Заверительный пакет',
-					32 => 'Гарантия сохранности',
-					33 => 'Отчёт о недоставленных отправлениях',
-					34 => 'Нанесение ШК',
-					35 => 'Упаковка вложений',
-					36 => 'Нанесение стикера',
-					37 => 'Перевозка и сдача',
-					38 => 'Проверка комплектности',
-					39 => 'Заявление о возврате, изменении или исправлении адреса',
-					40 => 'Доставка в населённый пункт, не имеющий телеграфной и факсимильной связи',
-					41 => 'Пакет SMS уведомлений отправителю при единичном приеме',
-					42 => 'Пакет SMS уведомлений получателю при единичном приеме',
-					43 => 'Пакет SMS уведомлений отправителю при партионном приеме',
-					44 => 'Пакет SMS уведомлений получателю при партионном приеме',
-					45 => 'Пролонгация договора',
-					51 => 'Правительственное',
-					52 => 'Воинское',
-					53 => 'Служебное',
-					54 => 'Судебное',
-					55 => 'Президентское',
-					56 => 'Кредитное',
-					57 => 'Межоператорское',
-					58 => 'Вручение в ОПС',
-					59 => 'Предпочтовая подготовка',
-					60 => 'Агентские функции третьим лицам',
-					61 => 'Доставка по звонку',
-					62 => 'Электронное уведомление о вручении',
-					63 => 'Обслуживание консолидаторов',
-					64 => 'Пакет SMS-сервис',
-					65 => 'Курьерский сбор',
-					66 => 'Возврат сопроводительных документов',
-					67 => 'Выдача через АПС',
-					68 => 'Доставка и вручение почтальонами мелких пакетов на дому',
-					70 => 'Наличие индивидуального договора с предприятием почтовой связи',
+					1   => 'Простое уведомление о вручении',
+					2   => 'Заказное уведомление о вручении',
+					4   => 'Отметка «Осторожно/Хрупкая»',
+					6   => 'Громоздкая посылка',
+					7   => 'Доставка нарочным',
+					8   => 'Вручение лично в руки',
+					9   => 'Доставка документов',
+					10  => 'Доставка товаров',
+					12  => 'Нестандартный размер',
+					14  => 'Страхование отправления',
+					22  => 'Проверка соответствия вложения описи',
+					23  => 'Составление описи вложения',
+					24  => 'Оплата наложенного платежа отправителем',
+					25  => 'Таможенный сбор',
+					26  => 'Доставка курьером',
+					27  => 'Упаковка «Почта России»',
+					28  => 'Корпоративный клиент «Почта России»',
+					29  => 'Доставка почтового перевода на дом',
+					30  => 'Уведомление о вручении почтового перевода',
+					31  => 'Заверительный пакет',
+					32  => 'Гарантия сохранности',
+					33  => 'Отчёт о недоставленных отправлениях',
+					34  => 'Нанесение ШК',
+					35  => 'Упаковка вложений',
+					36  => 'Нанесение стикера',
+					37  => 'Перевозка и сдача',
+					38  => 'Проверка комплектности',
+					39  => 'Заявление о возврате, изменении или исправлении адреса',
+					41  => 'Пакет SMS уведомлений отправителю при единичном приеме',
+					42  => 'Пакет SMS уведомлений получателю при единичном приеме',
+					43  => 'Пакет SMS уведомлений отправителю при партионном приеме',
+					44  => 'Пакет SMS уведомлений получателю при партионном приеме',
+					45  => 'Пролонгация договора (например, для услуг абонирования ячейки)',
+					46  => 'Оплата в момент доставки (COD)',
+					57  => 'Межоператорское',
+					58  => 'Вручение в ОПС',
+					59  => 'Предпочтовая подготовка',
+					60  => 'Агентские функции третьим лицам',
+					61  => 'Доставка по звонку',
+					62  => 'Электронное уведомление о вручении',
+					63  => 'Обслуживание консолидаторов',
+					64  => 'Пакет SMS-сервис',
+					65  => 'Курьерский сбор',
+					66  => 'Возврат сопроводительных документов',
+					67  => 'Выдача через АПС',
+					68  => 'Доставка и вручение почтальонами мелких пакетов на дому',
+					69  => 'Забор возврата курьером по адресу получателя',
+					70  => 'Наличие индивидуального договора с предприятием почтовой связи',
+					71  => 'СМС-уведомление об истечении срока хранения',
+					72  => 'СМС-уведомление о продлении срока хранения',
+					73  => 'СМС-уведомление об истечении второго срока хранения',
+					74  => 'СМС-уведомление о возврате отправления',
+					75  => 'СМС-уведомление о поступлении отправления в курьерскую службу',
+					76  => 'СМС-уведомление о передачи отправления курьеру для доставки',
+					77  => 'СМС-уведомление о неудачной попытке доставки отправления адресату',
+					78  => 'СМС-уведомление о второй неудачной попытке доставки отправления адресату',
+					80  => 'Забор отправления у отправителя',
+					81  => 'Простая проверка вложения',
+					82  => 'Проверка вложения примеркой',
+					83  => 'Проверка вложения на работоспособность',
+					85  => 'Возврат после проверки полный',
+					86  => 'Возврат после проверки частичный',
+					87  => 'Возврат ранее полученного товара',
+					90  => 'Продление срока хранения',
+					91  => 'Переадресация',
+					92  => 'Прием на территории отправителя',
+					93  => 'Доставка возврата отправителю',
+					94  => 'Виджет пунктов выдачи',
+					95  => 'Бесплатное хранение до 7 дней',
+					96  => 'Время работы ПВЗ и почтаматов в вечернее время',
+					97  => 'Доставка до ОПС и партнерских ПВЗ и почтаматов',
+					98  => 'Доставка и выдача в выходные дни',
+					99  => 'Погрузка/разгрузка отправлений при сборе со склада',
+					100 => 'Получение информации о движении отправления в реальном времени',
+					101 => 'Уведомление отправителя',
+					102 => 'Управление доставкой',
+					103 => 'Идентификация получателя по ПИН-коду',
 				]
 			],
 			'tax_status' => [
@@ -186,9 +217,10 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'default'     => 0,
 			),
 			'fixedpackvalue' => array(
-				'title'       => esc_html__( 'Max. Fixed Package Value', 'russian-post-and-ems-for-woocommerce' ),
-				'description' => esc_html__( 'You can set max. fixed value in RUB for some types of departure. By default value equals sum of the order.', 'russian-post-and-ems-for-woocommerce' ),
-				'type'        => 'number',
+				'title'             => esc_html__( 'Max. Fixed Package Value', 'russian-post-and-ems-for-woocommerce' ),
+				'description'       => esc_html__( 'You can set max. declared value in RUB for some types of departure. Min possible value is 1 RUB. When this fields has no value the declared value equals sum of the order.', 'russian-post-and-ems-for-woocommerce' ),
+				'type'              => 'number',
+				'custom_attributes' => [ 'min' => 1 ],
 			),
 
 			// packaging
@@ -335,7 +367,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		$this->add_rate( array(
 			'id'    => $this->get_rate_id(),
-			'label' => $this->title . ' ' . $message . ' ' . __( 'This message visible only for site administrator.', 'russian-post-and-ems-for-woocommerce' ),
+			'label' => $this->title . '. ' . $message . ' ' . __( 'This message visible only for site administrator.', 'russian-post-and-ems-for-woocommerce' ),
 			'cost'  => 0,
 		) );
 	}
@@ -344,10 +376,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * Log Some data using WC logger
 	 *
 	 * @param $message
+	 * @param string $type
 	 */
-	public function log_it( $message ) {
+	public function log_it( $message, $type = 'info' ) {
 		$logger = wc_get_logger();
-		$logger->info( $message, array( 'source' => 'rpaefw' ) );
+		$logger->{$type}( $message, array( 'source' => 'rpaefw' ) );
 	}
 
 	/**
@@ -357,6 +390,10 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 */
 	public function calculate_shipping( $package = array() ) {
 		global $woocommerce;
+
+		if ( ! ( is_cart() || is_checkout() ) ) {
+			return;
+		}
 
 		$from         = $this->from ? $this->from : get_option( 'woocommerce_store_postcode' );
 		$to           = '';
@@ -388,6 +425,13 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			return;
 		} elseif ( ! $postal_code && ! $city ) {
 			return;
+		}
+
+		// old version plugin types support
+		if ( $type && ! is_numeric( $type ) ) {
+			$new_type = $this->get_new_id_shipping_type( $type );
+
+			$type = $new_type ? $new_type : 27030;
 		}
 
 		// if postal code is empty take city
@@ -427,7 +471,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$weight = $weight < 100 ? 100 : $weight;
 
 		// get total value
-		$total_val = $package[ 'contents_cost' ];
+		$total_val = intval( $package[ 'contents_cost' ] );
 
 		// additional cost
 		$addcost     = intval( $this->addcost );
@@ -436,11 +480,12 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		// check and avoid package overweight before make api request
 		$is_overweight = false;
 		$weight_ranges = array(
-			2000  => array( 5001, 5011, ),
+			2000  => array( 5001, 5011 ),
 			2500  => array( 16010, 16020, 47030, 47020 ),
 			5000  => array( 3000, 3010, 3020, 3001, 3011 ),
 			10000 => array( 27030, 27020, 29030, 29020, 28030, 28020, ),
 			14500 => array( 9001, 9011 ),
+			15000 => array( 53030, 53070 ),
 			20000 => array( 23030, 23020, 51030, 51020, 34030, 34020, 4031, 4021 ),
 			31500 => array( 24030, 24020, 30030, 30020, 7030, 7020, 41030, 41020, 7031 ),
 			50000 => array( 4030, 4020 ),
@@ -488,18 +533,21 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		// fixed value
 		$fixedvalue = $this->fixedpackvalue;
-		if ( $fixedvalue != '' && $total_val > intval( $fixedvalue ) ) {
-			$total_val = $fixedvalue;
+		if ( $fixedvalue && $total_val > intval( $fixedvalue ) ) {
+			$total_val = intval( $fixedvalue );
 		}
 
 		if ( $currency != 'RUB' ) {
 			$total_val = $this->get_currency_value( $currency, $total_val, false );
 		}
 
+		$total_val = intval( $total_val * 100 );
+
 		$base_params = array(
 			'weight' => $weight,
 			'object' => $type,
-			'sumoc'  => $total_val * 100
+			'sumoc'  => $total_val,
+			'sumin'  => $total_val,
 		);
 
 		// add additional services
@@ -513,7 +561,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		// check if shipping goes abroad
 		if ( $country_code != 'RU' ) {
-			if ( ! in_array( $type, array( '4031', '4021', '7031', '5001', '5011', '9001', '9011' ) ) ) {
+			if ( ! in_array( $type, array( 4031, 4021, 7031, 5001, 5011, 9001, 9011 ) ) ) {
 				$this->maybe_print_error( __( 'For international shipping you should select international type in settings.', 'russian-post-and-ems-for-woocommerce' ) );
 
 				return;
@@ -532,7 +580,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			$base_params[ 'to' ]   = $to;
 
 			// check if type requires packaging
-			if ( in_array( $type, array( '27030', '27020', '29030', '29020', '28030', '28020' ) ) ) {
+			if ( in_array( $type, array( 27030, 27020, 29030, 29020, 28030, 28020, 53030, 53070 ) ) ) {
 				$base_params[ 'pack' ] = $this->pack ? $this->pack : 10;
 			}
 		}
@@ -925,16 +973,20 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 */
 	public function get_data_from_api( $request, $get ) {
 		$remote_response = wp_remote_get( $request, [ 'timeout' => 15 ] );
-		$this->log_it( 'Запрос для: ' . $request );
+		$this->log_it( __( 'Making request to get:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . $request );
 
 		if ( is_wp_error( $remote_response ) ) {
-			$this->maybe_print_error( __( 'Server connection error to get', 'russian-post-and-ems-for-woocommerce' ) . '"' . $get . '". ' . $remote_response->get_error_message() );
+			$error_message = __( 'Server connection error to get', 'russian-post-and-ems-for-woocommerce' ) . '"' . $get . '". ' . $remote_response->get_error_message();
+			$this->log_it( $error_message, 'error' );
+			$this->maybe_print_error( $error_message );
 
 			return false;
 		}
 
 		if ( $response_code = wp_remote_retrieve_response_code( $remote_response ) !== 200 ) {
-			$this->maybe_print_error( __( 'Request error for', 'russian-post-and-ems-for-woocommerce' ) . '"' . $get . '". CODE: ' . $response_code . ' ' . wp_remote_retrieve_body( $remote_response ) );
+			$error_message = __( 'Request error for', 'russian-post-and-ems-for-woocommerce' ) . '"' . $get . '". CODE: ' . $response_code . ' ' . wp_remote_retrieve_body( $remote_response );
+			$this->log_it( $error_message, 'error' );
+			$this->maybe_print_error( $error_message );
 
 			return false;
 		}
@@ -945,7 +997,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			$response = json_decode( $body, true );
 
 			if ( isset( $response[ 'error' ] ) ) {
-				$this->maybe_print_error( 'Ошибка: ' . $response[ 'error' ][ 0 ] );
+				$error_message = __( 'Error:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . $response[ 'error' ][ 0 ];
+				$this->log_it( $error_message, 'error' );
+				$this->maybe_print_error( $error_message );
 
 				return false;
 			}
@@ -1225,4 +1279,36 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		return isset( $countries[ $code ] ) ? $countries[ $code ] : false;
 	}
 
+
+	public function get_new_id_shipping_type( $old_value ) {
+		$old_types = [
+			'ПростаяБандероль'           => 3000,
+			'ЗаказнаяБандероль'          => 3010,
+			'ЗаказнаяБандероль1Класс'    => 16010,
+			'ЦеннаяБандероль'            => 3020,
+			'ЦеннаяБандероль1Класс'      => 16020,
+			'ПростаяПосылка'             => 27030,
+			'ЦеннаяПосылка'              => 27020,
+			'Посылка1Класс'              => 47020,
+			'EMS'                        => 7020,
+			'МждМешокМ'                  => 9001,
+			'МждМешокМАвиа'              => 9001,
+			'МждМешокМЗаказной'          => 9011,
+			'МждМешокМАвиаЗаказной'      => 9011,
+			'МждБандероль'               => 3001,
+			'МждБандерольАвиа'           => 3001,
+			'МждБандерольЗаказная'       => 3011,
+			'МждБандерольАвиаЗаказная'   => 3011,
+			'МждМелкийПакет'             => 5001,
+			'МждМелкийПакетАвиа'         => 5001,
+			'МждМелкийПакетЗаказной'     => 5011,
+			'МждМелкийПакетАвиаЗаказной' => 5011,
+			'МждПосылка'                 => 4021,
+			'МждПосылкаАвиа'             => 4021,
+			'EMS_МждДокументы'           => 7031,
+			'EMS_МждТовары'              => 7031,
+		];
+
+		return isset( $old_types[ $old_value ] ) ? $old_types[ $old_value ] : false;
+	}
 }

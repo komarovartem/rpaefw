@@ -2,7 +2,7 @@
 /*
 Plugin Name: Russian Post and EMS for WooCommerce
 Description: The plugin allows you to automatically calculate the shipping cost for "Russian Post" or "EMS"
-Version: 1.2
+Version: 1.2.6
 Author: Artem Komarov
 Author URI: mailto:yumecommerce@gmail.com
 License: GPLv3
@@ -42,11 +42,6 @@ class RPAEFW {
 
 		add_filter( 'woocommerce_get_sections_shipping', array( $this, 'settings_page' ) );
 		add_filter( 'woocommerce_get_settings_shipping', array( $this, 'settings' ), 10, 2 );
-
-		add_action( 'activate_russian-post-and-ems-for-woocommerce/russian-post-and-ems-for-woocommerce.php', [
-			$this,
-			'old_version_support'
-		] );
 	}
 
 	/**
@@ -54,6 +49,8 @@ class RPAEFW {
 	 */
 	public function load_textdomain() {
 		load_plugin_textdomain( 'russian-post-and-ems-for-woocommerce' );
+
+//		include_once( dirname( __FILE__ ) . '/inc/class-rpaefw-ekom.php' );
 	}
 
 	/**
@@ -256,28 +253,25 @@ class RPAEFW {
 				],
 			];
 
-			if ( ! $this::is_pro_active() ) {
-				$settings[] = [
-					'title'    => 'Токен авторизации приложения',
-					'desc'     => '<br> Доступно только в PRO версии. <br> Для интеграции с API Онлайн-сервиса «Отправка». Токен можно узнать в настройках <a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">личного кабинета</a>',
-					'type'     => 'text',
-					'id'       => uniqid(),
-					'custom_attributes' => [
-						'disabled' => true,
-					]
+			$settings[] = [
+				'title' => 'Токен авторизации приложения',
+				'desc'  => '<br> Доступно только в PRO версии. <br>Для интеграции с API Онлайн-сервиса «Отправка». Токен можно узнать в настройках <a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">личного кабинета</a>',
+				'type'  => 'text',
+				'id'    => 'rpaefw_token',
+				'custom_attributes' => [
+					'disabled' => 'disabled'
+				]
+			];
 
-				];
-				$settings[] = [
-					'title'    => 'Ключ авторизации пользователя',
-					'desc'     => '<br> Доступно только в PRO версии. <br> Для интеграции с API Онлайн-сервиса «Отправка». Вы можете сгенерировать ключ авторизации <a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">здесь</a>',
-					'type'     => 'text',
-					'id'       => uniqid(),
-					'custom_attributes' => [
-						'disabled' => true,
-					]
-				];
-			}
-
+			$settings[] = [
+				'title' => 'Ключ авторизации пользователя',
+				'desc'  => '<br> Доступно только в PRO версии. <br>Для интеграции с API Онлайн-сервиса «Отправка». Вы можете сгенерировать ключ авторизации <a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">здесь</a>',
+				'type'  => 'text',
+				'id'    => 'rpaefw_key',
+				'custom_attributes' => [
+					'disabled' => 'disabled'
+				]
+			];
 
 			$settings = apply_filters( 'rpaefw_settings', $settings );
 
@@ -288,60 +282,6 @@ class RPAEFW {
 		}
 
 		return $settings;
-	}
-
-	public function old_version_support() {
-		global $wpdb;
-		$option_settings = $wpdb->get_results(
-			"SELECT option_name FROM $wpdb->options WHERE option_name LIKE '%woocommerce_rpaefw_post_calc_%'"
-		);
-
-		if ( ! $option_settings ) {
-			return;
-		}
-
-		foreach ( $option_settings as $settings ) {
-			$option = get_option( $settings->option_name );
-
-			if ( ! is_numeric( $option[ 'type' ] ) ) {
-				if ( $new_type = $this->get_new_id_shipping_type( $option[ 'type' ] ) ) {
-					$option[ 'type' ] = $new_type;
-					update_option( $settings->option_name, $option );
-				}
-			}
-		}
-	}
-
-	public function get_new_id_shipping_type( $old_value ) {
-		$old_types = [
-			'ПростаяБандероль'           => 3000,
-			'ЗаказнаяБандероль'          => 3010,
-			'ЗаказнаяБандероль1Класс'    => 16010,
-			'ЦеннаяБандероль'            => 3020,
-			'ЦеннаяБандероль1Класс'      => 16020,
-			'ПростаяПосылка'             => 27030,
-			'ЦеннаяПосылка'              => 27020,
-			'Посылка1Класс'              => 47020,
-			'EMS'                        => 7020,
-			'МждМешокМ'                  => 9001,
-			'МждМешокМАвиа'              => 9001,
-			'МждМешокМЗаказной'          => 9011,
-			'МждМешокМАвиаЗаказной'      => 9011,
-			'МждБандероль'               => 3001,
-			'МждБандерольАвиа'           => 3001,
-			'МждБандерольЗаказная'       => 3011,
-			'МждБандерольАвиаЗаказная'   => 3011,
-			'МждМелкийПакет'             => 5001,
-			'МждМелкийПакетАвиа'         => 5001,
-			'МждМелкийПакетЗаказной'     => 5011,
-			'МждМелкийПакетАвиаЗаказной' => 5011,
-			'МждПосылка'                 => 4021,
-			'МждПосылкаАвиа'             => 4021,
-			'EMS_МждДокументы'           => 7031,
-			'EMS_МждТовары'              => 7031,
-		];
-
-		return $old_types[ $old_value ];
 	}
 
 	public static function is_pro_active() {

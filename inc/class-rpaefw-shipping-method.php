@@ -391,10 +391,6 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	public function calculate_shipping( $package = array() ) {
 		global $woocommerce;
 
-		if ( ! ( is_cart() || is_checkout() ) ) {
-			return;
-		}
-
 		$from         = $this->from ? $this->from : get_option( 'woocommerce_store_postcode' );
 		$to           = '';
 		$type         = $this->type;
@@ -926,28 +922,13 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			return $arr;
 		}
 
-		// source - index file
-		$src_txt = plugin_dir_url( __FILE__ ) . 'post-calc/' . $src_txt;
+		$src_txt = plugin_dir_path( __FILE__ ) . 'post-calc/' . $src_txt;
 
 		$search = mb_convert_case( $search, MB_CASE_LOWER, $config_cs );
-
 		$search = preg_replace( '/,/', '', $search );
 		$search = explode( ' ', $search )[ 0 ];
 
-		if ( is_ssl() ) {
-			$contex_options = array(
-				"ssl" => array(
-					"verify_peer"      => false,
-					"verify_peer_name" => false,
-				),
-			);
-			$context        = stream_context_create( $contex_options );
-			$fp             = fopen( $src_txt, 'r', false, $context );
-		} else {
-			$fp = fopen( $src_txt, 'r' );
-		}
-
-		if ( ! $fp ) {
+		if ( ! $fp = fopen( $src_txt, 'r' ) ) {
 			return $arr;
 		}
 

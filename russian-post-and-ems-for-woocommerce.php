@@ -49,8 +49,6 @@ class RPAEFW {
 	 */
 	public function load_textdomain() {
 		load_plugin_textdomain( 'russian-post-and-ems-for-woocommerce' );
-
-//		include_once( dirname( __FILE__ ) . '/inc/class-rpaefw-ekom.php' );
 	}
 
 	/**
@@ -247,29 +245,29 @@ class RPAEFW {
 				],
 				[
 					'title' => 'Регион-ИНН-Договор',
-					'desc'  => '<br> Укажите данные если вы используете методы предназначеные для корпоративных клиентов.  Договор, заключенный между корпоративным клиентом и ФГУП “Почта России”. Строка состоит из кода региона по Конституции РФ, ИНН предприятия и номера договора, разделенных знаком “-” (дефис).',
+					'desc'  => 'Укажите данные если вы используете методы предназначеные для корпоративных клиентов.  Договор, заключенный между корпоративным клиентом и ФГУП “Почта России”. Строка состоит из кода региона по Конституции РФ, ИНН предприятия и номера договора, разделенных знаком “-” (дефис).',
 					'type'  => 'text',
 					'id'    => 'rpaefw_dogovor'
 				],
 			];
 
 			$settings[] = [
-				'title' => 'Токен авторизации приложения',
-				'desc'  => '<br> Доступно только в PRO версии. <br>Для интеграции с API Онлайн-сервиса «Отправка». Токен можно узнать в настройках <a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">личного кабинета</a>',
-				'type'  => 'text',
-				'id'    => 'rpaefw_token',
+				'title'             => 'Токен авторизации приложения',
+				'desc'              => $this->only_in_pro_ver_text() . 'Для интеграции с API Онлайн-сервиса «Отправка». Токен можно узнать в настройках <a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">личного кабинета</a>',
+				'type'              => 'text',
+				'id'                => 'rpaefw_token',
 				'custom_attributes' => [
-					'disabled' => 'disabled'
+					$this->is_pro_active() ? '' : 'disabled' => ''
 				]
 			];
 
 			$settings[] = [
-				'title' => 'Ключ авторизации пользователя',
-				'desc'  => '<br> Доступно только в PRO версии. <br>Для интеграции с API Онлайн-сервиса «Отправка». Вы можете сгенерировать ключ авторизации <a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">здесь</a>',
-				'type'  => 'text',
-				'id'    => 'rpaefw_key',
+				'title'             => 'Ключ авторизации пользователя',
+				'desc'              => $this->only_in_pro_ver_text() . 'Для интеграции с API Онлайн-сервиса «Отправка». Вы можете сгенерировать ключ авторизации <a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">здесь</a>',
+				'type'              => 'text',
+				'id'                => 'rpaefw_key',
 				'custom_attributes' => [
-					'disabled' => 'disabled'
+					$this->is_pro_active() ? '' : 'disabled' => ''
 				]
 			];
 
@@ -290,6 +288,10 @@ class RPAEFW {
 		}
 
 		return false;
+	}
+
+	public static function only_in_pro_ver_text() {
+		return RPAEFW::is_pro_active() ? '' : 'Доступно только в PRO версии. <br>';
 	}
 }
 

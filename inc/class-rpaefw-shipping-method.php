@@ -885,11 +885,6 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * @return bool
 	 */
 	public function get_default_ops( $to ) {
-		// in case fopen is not working
-		if ( ! ini_get( 'allow_url_fopen' ) ) {
-			return true;
-		}
-
 		if ( preg_match( '/^[1-9][0-9]{5}$/', $to ) ) {
 			// if it is a post code
 			if ( $arr = $this->arr_from_txt( 'postcalc_light_post_indexes.txt', $to ) ) {
@@ -924,17 +919,13 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		$src_txt = plugin_dir_path( __FILE__ ) . 'post-calc/' . $src_txt;
 
-		$search = mb_convert_case( $search, MB_CASE_LOWER, $config_cs );
-		$search = preg_replace( '/,/', '', $search );
-		$search = explode( ' ', $search )[ 0 ];
-
 		if ( ! $fp = fopen( $src_txt, 'r' ) ) {
 			return $arr;
 		}
 
 		while ( ( $line = fgets( $fp ) ) !== false ) {
 			list( $key, $value ) = explode( "\t", $line );
-			if ( mb_stripos( $key, $search, 0, $config_cs ) === 0 ) {
+			if ( mb_stripos( $key, $search ) !== false ) {
 				$arr[ $key ] = trim( $value );
 				break;
 			}

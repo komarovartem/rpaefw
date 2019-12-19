@@ -291,7 +291,7 @@ class RPAEFW {
 	}
 
 	public static function only_in_pro_ver_text() {
-		return RPAEFW::is_pro_active() ? '' : 'Доступно только в PRO версии. <br>';
+		return RPAEFW::is_pro_active() ? '' : 'Доступно только в PRO версии. ';
 	}
 }
 

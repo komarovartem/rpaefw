@@ -67,8 +67,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					31020 => 'Бизнес курьер экспресс с объявленной ценностью (31.5кг)',
 					39000 => 'КПО-стандарт',
 					40000 => 'КПО-эконом',
-					53030 => 'ЕКОМ обыкновенный (15 кг)',
-					53070 => 'ЕКОМ с обязательным платежом (15 кг)',
+					53030 => 'ЕКОМ обыкновенный (15 кг) ' . RPAEFW::only_in_pro_ver_text(),
+					53070 => 'ЕКОМ с обязательным платежом (15 кг) ' . RPAEFW::only_in_pro_ver_text(),
 					7030  => 'EMS (31.5кг)',
 					7020  => 'EMS с объявленной ценностью (31.5кг)',
 					41030 => 'EMS РТ (31.5кг)',
@@ -419,7 +419,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			) );
 
 			return;
-		} elseif ( ! $postal_code && ! $city ) {
+		} elseif ( ! $postal_code && ! $city && $country_code == 'RU' ) {
 			return;
 		}
 
@@ -454,6 +454,28 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				$to = $validated_city;
 			}
 		}
+
+		// change postcode to EKOM index if it is selected
+		if ( in_array( $type, [ 53030, 53070 ] ) ) {
+//			ob_start();
+//			dd($_POST, 0);
+//			$dssadasd = ob_get_clean();
+//			$this->add_rate( array(
+//				'id'    => $this->get_rate_id(),
+//				'label' => $dssadasd,
+//				'cost'  => 0,
+//			) );
+//
+//			return;
+
+			if ( isset( $_POST[ 'post_data' ] ) ) {
+				parse_str( $_POST[ 'post_data' ], $post_data );
+				if ( isset( $post_data[ 'rpaefw_ekom_index' ] ) ) {
+					$to = intval( $post_data[ 'rpaefw_ekom_index' ] );
+				}
+			}
+		}
+
 
 		// get weight of the cart
 		// normalise weights, unify to g
@@ -608,7 +630,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		// show delivery time
-		if ( $this->time === 'yes' ) {
+		if ( $this->time === 'yes' && $country_code == 'RU' ) {
 			$request = add_query_arg( array(
 				'from'   => $from,
 				'to'     => $to,

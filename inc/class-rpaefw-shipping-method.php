@@ -40,6 +40,15 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'type'        => 'select',
 				'default'     => 27030,
 				'options'     => array(
+					2000  => 'Письмо простое',
+					11000 => 'Письмо простое 2.0',
+					2010  => 'Письмо заказное',
+					11010 => 'Письмо заказное 2.0',
+					33010 => 'Письмо курьерское заказное',
+					2020  => 'Письмо с объявленной ценностью',
+					15000 => 'Письмо 1 класса простое',
+					15010 => 'Письмо 1 класса заказное',
+					15020 => 'Письмо 1 класса с объявленной ценностью',
 					3000  => 'Бандероль простая (5кг)',
 					3010  => 'Бандероль заказная (5кг)',
 					3020  => 'Бандероль с объявленной ценностью (5кг)',
@@ -398,10 +407,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$time         = '';
 		$country_code = $package[ 'destination' ][ 'country' ] ? $package[ 'destination' ][ 'country' ] : 'RU';
 		$postal_code  = wc_format_postcode( $package[ 'destination' ][ 'postcode' ], $country_code );
+		$state        = $package[ 'destination' ][ 'state' ];
 		$city         = $package[ 'destination' ][ 'city' ];
 
 		// check if default currency is different from RUB
-		$currency = get_option( 'woocommerce_currency' );
+		$currency = $this->get_store_currency();
 
 		// origin postcode must be set
 		if ( ! $from ) {
@@ -468,14 +478,18 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 //
 //			return;
 
-			if ( isset( $_POST[ 'post_data' ] ) ) {
-				parse_str( $_POST[ 'post_data' ], $post_data );
-				if ( isset( $post_data[ 'rpaefw_ekom_index' ] ) ) {
-					$to = intval( $post_data[ 'rpaefw_ekom_index' ] );
+			if ( RPAEFW::is_pro_active() ) {
+				if ( $ekom_index = $this->get_ekom_index( $state, $city ) ) {
+					$to = intval( $ekom_index );
+				} else {
+//					$this->log_it( __( 'Could not find post index for EKOM shipping for this address.' . ' ' . $state . ', ' . $city, 'russian-post-and-ems-for-woocommerce' ) );
+
+					return;
 				}
+			} else {
+				return;
 			}
 		}
-
 
 		// get weight of the cart
 		// normalise weights, unify to g
@@ -638,18 +652,15 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			), 'https://delivery.pochta.ru/delivery/v1/calculate?json' );
 
 			if ( ! $delivery_time = get_transient( $request ) ) {
-				if ( ! $delivery_time = $this->get_data_from_api( $request, 'time' ) ) {
-					return;
+				if ( $delivery_time = $this->get_data_from_api( $request, 'time' ) ) {
+					set_transient( $request, $delivery_time, DAY_IN_SECONDS * 30 );
+					if ( isset( $this->add_time ) && $this->add_time ) {
+						$delivery_time += intval( $this->add_time );
+					}
+
+					$time = ' (' . sprintf( _n( '%s day', '%s days', $delivery_time, 'russian-post-and-ems-for-woocommerce' ), number_format_i18n( $delivery_time ) ) . ')';
 				}
-
-				set_transient( $request, $delivery_time, DAY_IN_SECONDS * 30 );
 			}
-
-			if ( isset( $this->add_time ) && $this->add_time ) {
-				$delivery_time += intval( $this->add_time );
-			}
-
-			$time = ' (' . sprintf( _n( '%s day', '%s days', $delivery_time, 'russian-post-and-ems-for-woocommerce' ), number_format_i18n( $delivery_time ) ) . ')';
 		}
 
 		$this->add_rate( array(
@@ -657,6 +668,53 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			'label' => $this->title . $time,
 			'cost'  => $cost,
 		) );
+	}
+
+	/**
+	 * Find index for EKOM shipping type from PRO plugin
+	 *
+	 * @param $shipping_state
+	 * @param $shipping_city
+	 *
+	 * @return bool|string
+	 */
+	public function get_ekom_index( $shipping_state, $shipping_city ) {
+		if ( ! $file = fopen( WP_PLUGIN_DIR . '/russian-post-and-ems-pro-for-woocommerce/inc/post-data-base/pvz.txt', 'r' ) ) {
+			return false;
+		}
+
+		$ekom_index = '';
+
+		$shipping_state = isset( WC()->countries->states[ 'RU' ][ $shipping_state ] ) ? WC()->countries->states[ 'RU' ][ $shipping_state ] : $shipping_state;
+
+		while ( ( $line = fgets( $file ) ) !== false ) {
+			list( $index, $state, $city ) = explode( "\t", $line );
+			if ( $shipping_state == $state && $shipping_city == $city ) {
+				$ekom_index = $index;
+				break;
+			}
+		}
+
+		fclose( $file );
+
+		return $ekom_index;
+	}
+
+	/**
+	 * Check store currency and validate it
+	 *
+	 * @return string
+	 */
+	public function get_store_currency() {
+		$currency       = get_option( 'woocommerce_currency', 'RUB' );
+		$all_currencies = get_woocommerce_currencies();
+
+		// validate currency since some users might have issue when it's not set properly
+		if ( isset( $all_currencies[ $currency ] ) ) {
+			return $currency;
+		}
+
+		return 'RUB';
 	}
 
 	/**

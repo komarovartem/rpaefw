@@ -410,6 +410,24 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$state        = $package[ 'destination' ][ 'state' ];
 		$city         = $package[ 'destination' ][ 'city' ];
 
+		// get weight of the cart
+		// normalise weights, unify to g
+		$weight = $woocommerce->cart->cart_contents_weight;
+		$weight = wc_get_weight( $weight, 'g' );
+
+		// plus pack weight
+		$weight = $weight + intval( $this->addpackweight );
+
+		// check weight and set minimum value for Russian Post if it is less than required
+		$weight = $weight < 100 ? 100 : $weight;
+
+		// get total value
+		$total_val = intval( $package[ 'contents_cost' ] );
+
+		// additional cost
+		$addcost     = intval( $this->addcost );
+		$addpackcost = intval( $this->addpackcost );
+
 		// check if default currency is different from RUB
 		$currency = $this->get_store_currency();
 
@@ -467,47 +485,20 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		// change postcode to EKOM index if it is selected
 		if ( in_array( $type, [ 53030, 53070 ] ) ) {
-//			ob_start();
-//			dd($_POST, 0);
-//			$dssadasd = ob_get_clean();
-//			$this->add_rate( array(
-//				'id'    => $this->get_rate_id(),
-//				'label' => $dssadasd,
-//				'cost'  => 0,
-//			) );
-//
-//			return;
+			// plus 10 rubles for sms-notice-recipient which is required but for some reason not included in shipping price
+			$addcost += 10;
 
 			if ( RPAEFW::is_pro_active() ) {
 				if ( $ekom_index = $this->get_ekom_index( $state, $city ) ) {
 					$to = intval( $ekom_index );
 				} else {
 //					$this->log_it( __( 'Could not find post index for EKOM shipping for this address.' . ' ' . $state . ', ' . $city, 'russian-post-and-ems-for-woocommerce' ) );
-
 					return;
 				}
 			} else {
 				return;
 			}
 		}
-
-		// get weight of the cart
-		// normalise weights, unify to g
-		$weight = $woocommerce->cart->cart_contents_weight;
-		$weight = wc_get_weight( $weight, 'g' );
-
-		// plus pack weight
-		$weight = $weight + intval( $this->addpackweight );
-
-		// check weight and set minimum value for Russian Post if it is less than required
-		$weight = $weight < 100 ? 100 : $weight;
-
-		// get total value
-		$total_val = intval( $package[ 'contents_cost' ] );
-
-		// additional cost
-		$addcost     = intval( $this->addcost );
-		$addpackcost = intval( $this->addpackcost );
 
 		// check and avoid package overweight before make api request
 		$is_overweight = false;
@@ -685,7 +676,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		$ekom_index = '';
 
-		$shipping_state = isset( WC()->countries->states[ 'RU' ][ $shipping_state ] ) ? WC()->countries->states[ 'RU' ][ $shipping_state ] : $shipping_state;
+		$shipping_state = intval( $shipping_state );
 
 		while ( ( $line = fgets( $file ) ) !== false ) {
 			list( $index, $state, $city ) = explode( "\t", $line );

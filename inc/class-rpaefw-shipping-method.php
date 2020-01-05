@@ -82,8 +82,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					7020  => 'EMS с объявленной ценностью (31.5кг)',
 					41030 => 'EMS РТ (31.5кг)',
 					41020 => 'EMS РТ с объявленной ценностью (31.5кг)',
-					34030 => 'EMS оптимальное (20кг)',
-					34020 => 'EMS оптимальное с объявленной ценностью (20кг)',
+//                  currently no PVZ lists are available
+//					34030 => 'EMS оптимальное (20кг)',
+//					34020 => 'EMS оптимальное с объявленной ценностью (20кг)',
 					52030 => 'EMS Тендер обыкновенное ',
 					52020 => 'EMS Тендер с объявленной ценностью',
 					4031  => 'Международные отправления. Посылка обыкновенная (20кг)',
@@ -237,7 +238,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			),
 			'fixedpackvalue' => array(
 				'title'             => esc_html__( 'Max. Fixed Package Value', 'russian-post-and-ems-for-woocommerce' ),
-				'description'       => esc_html__( 'You can set max. declared value in RUB for some types of departure. Min possible value is 1 RUB. When this fields has no value the declared value equals sum of the order.', 'russian-post-and-ems-for-woocommerce' ),
+				'description'       => esc_html__( 'You can set max. declared value in RUB for some types of departure. Min possible value is 1 RUB. When this fields has no value the declared value equals sum of the order.', 'russian-post-and-ems-for-woocommerce' ) . ' ' . esc_html__( 'This will be applied only if COD is not selected as payment since the COD payment cannot be bigger than declared value.', 'russian-post-and-ems-for-woocommerce' ),
 				'type'              => 'number',
 				'custom_attributes' => [ 'min' => 1 ],
 			),
@@ -468,6 +469,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			$type = $new_type ? $new_type : 27030;
 		}
 
+		$type = $this->match_shipping_type_based_on_payment( $type );
+
 		// if postal code is empty take city
 		if ( $country_code == 'RU' ) {
 			if ( RPAEFW::is_pro_active() ) {
@@ -571,7 +574,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		// fixed value
 		$fixedvalue = $this->fixedpackvalue;
-		if ( $fixedvalue && $total_val > intval( $fixedvalue ) ) {
+		if ( $fixedvalue && $total_val > intval( $fixedvalue ) && ! $this->is_cod_used_as_payment() ) {
 			$total_val = intval( $fixedvalue );
 		}
 
@@ -587,10 +590,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			'sumin'     => $total_val,
 			'sum_month' => $total_val,
 			'pack'      => $this->pack ? $this->pack : 10,
-			'isavia'    => isset( $this->isavia ) ? $this->isavia : 1
+			'isavia'    => isset( $this->isavia ) ? $this->isavia : 1,
+			'object'    => $type
 		);
-
-		$base_params[ 'object' ] = $this->match_shipping_type_based_on_payment( $type );
 
 		// add COD as service if it is selected as payment method
 		if ( $this->is_cod_used_as_payment() ) {
@@ -661,15 +663,20 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'object' => $type,
 			), 'https://delivery.pochta.ru/delivery/v1/calculate?json' );
 
-			if ( ! $delivery_time = get_transient( $request ) ) {
+			$request_hash = 'rpaefw_' . md5( $request );
+
+			if ( ! $delivery_time = get_transient( $request_hash ) ) {
 				if ( $delivery_time = $this->get_data_from_api( $request, 'time' ) ) {
-					set_transient( $request, $delivery_time, DAY_IN_SECONDS * 30 );
+					set_transient( $request_hash, $delivery_time, DAY_IN_SECONDS * 30 );
+
 					if ( isset( $this->add_time ) && $this->add_time ) {
 						$delivery_time += intval( $this->add_time );
 					}
-
-					$time = ' (' . sprintf( _n( '%s day', '%s days', $delivery_time, 'russian-post-and-ems-for-woocommerce' ), number_format_i18n( $delivery_time ) ) . ')';
 				}
+			}
+
+			if ( $delivery_time ) {
+				$time = ' (' . sprintf( _n( '%s day', '%s days', $delivery_time, 'russian-post-and-ems-for-woocommerce' ), number_format_i18n( $delivery_time ) ) . ')';
 			}
 		}
 

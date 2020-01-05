@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class RPAEFW_Postcode_Tracking_Code_Class extends WC_Email {
+class RPAEFW_Tracking_Code extends WC_Email {
 
 	/**
 	 * Customer note.
@@ -19,7 +19,6 @@ class RPAEFW_Postcode_Tracking_Code_Class extends WC_Email {
 	 * Constructor.
 	 */
 	public function __construct() {
-
 		$this->id             = 'rpaefw_postcode_tracking_number';
 		$this->customer_email = true;
 		$this->title          = esc_html__( 'Tracking Code', 'russian-post-and-ems-for-woocommerce' );
@@ -57,7 +56,6 @@ class RPAEFW_Postcode_Tracking_Code_Class extends WC_Email {
 				$this->recipient               = $this->object->get_billing_email();
 				$this->recipientname           = $this->object->get_billing_first_name();
 				$this->customer_note           = $customer_note;
-				$this->ems_field               = $ems_field;
 
 				$this->find['order-number']    = '{order_number}';
 
@@ -87,7 +85,6 @@ class RPAEFW_Postcode_Tracking_Code_Class extends WC_Email {
 			'email_heading' => $this->get_heading(),
 			'customer_note' => $this->customer_note,
 			'recipientname' => $this->recipientname,
-			'ems_field'     => $this->ems_field,
 			'sent_to_admin' => false,
 			'plain_text'    => false,
 			'email'			=> $this
@@ -114,4 +111,4 @@ class RPAEFW_Postcode_Tracking_Code_Class extends WC_Email {
 	}
 }
 
-return new RPAEFW_Postcode_Tracking_Code_Class();
+return new RPAEFW_Tracking_Code();

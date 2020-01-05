@@ -204,6 +204,16 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					103 => 'Идентификация получателя по ПИН-коду',
 				]
 			],
+			'isavia'     => [
+				'title'       => __( 'Preferred shipping option', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => __( 'Note it takes effect only for some shipping types', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'select',
+				'default'     => '1',
+				'options'     => [
+					'0' => __( 'Ground delivery', 'russian-post-and-ems-for-woocommerce' ),
+					'1' => __( 'Air delivery', 'russian-post-and-ems-for-woocommerce' ),
+				]
+			],
 			'tax_status' => [
 				'title'   => __( 'Tax status', 'russian-post-and-ems-for-woocommerce' ),
 				'type'    => 'select',
@@ -382,14 +392,14 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
-	 * Log Some data using WC logger
+	 * Log some data using WC logger
 	 *
 	 * @param $message
 	 * @param string $type
 	 */
 	public function log_it( $message, $type = 'info' ) {
 		$logger = wc_get_logger();
-		$logger->{$type}( $message, array( 'source' => 'rpaefw' ) );
+		$logger->{$type}( $message, array( 'source' => 'russian-post' ) );
 	}
 
 	/**
@@ -409,14 +419,14 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$postal_code  = wc_format_postcode( $package[ 'destination' ][ 'postcode' ], $country_code );
 		$state        = $package[ 'destination' ][ 'state' ];
 		$city         = $package[ 'destination' ][ 'city' ];
+		$services     = ( isset( $this->service ) && ! empty( $this->service ) ) ? $this->service : [];
 
 		// get weight of the cart
 		// normalise weights, unify to g
-		$weight = $woocommerce->cart->cart_contents_weight;
-		$weight = wc_get_weight( $weight, 'g' );
+		$weight = wc_get_weight( $woocommerce->cart->cart_contents_weight, 'g' );
 
 		// plus pack weight
-		$weight = $weight + intval( $this->addpackweight );
+		$weight += intval( $this->addpackweight );
 
 		// check weight and set minimum value for Russian Post if it is less than required
 		$weight = $weight < 100 ? 100 : $weight;
@@ -460,39 +470,44 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		// if postal code is empty take city
 		if ( $country_code == 'RU' ) {
-			if ( $postal_code != '' ) {
-				// check if post code in a russian post base
-				$validated_post_code = $this->get_default_ops( $postal_code );
-				if ( ! $validated_post_code ) {
-					$this->maybe_print_error( __( 'Post code of customer is not valid. Could not find any matches in a base.', 'russian-post-and-ems-for-woocommerce' ) );
-
-					return;
+			if ( RPAEFW::is_pro_active() ) {
+				// if not ekom since it will be calculated later
+				if ( ! in_array( $type, [ 53030, 53070 ] ) ) {
+					if ( ! $to = $this->get_index_based_on_address( $state, $city, $postal_code ) ) {
+						$to = $postal_code;
+					}
 				}
-
-				$to = $postal_code;
 			} else {
-				// check if city in a russian post base
-				$validated_city = $this->get_default_ops( $city );
-				if ( ! $validated_city ) {
-					$this->maybe_print_error( __( 'The city is not valid. Could not find any matches in a base.', 'russian-post-and-ems-for-woocommerce' ) );
+				if ( $postal_code != '' ) {
+					// check if post code in a russian post base
+					$validated_post_code = $this->get_default_ops( $postal_code );
+					if ( ! $validated_post_code ) {
+						$this->maybe_print_error( __( 'Post code of customer is not valid. Could not find any matches in a base.', 'russian-post-and-ems-for-woocommerce' ) );
 
-					return;
+						return;
+					}
+
+					$to = $postal_code;
+				} else {
+					// check if city in a russian post base
+					$validated_city = $this->get_default_ops( $city );
+					if ( ! $validated_city ) {
+						$this->maybe_print_error( __( 'The city is not valid. Could not find any matches in a base.', 'russian-post-and-ems-for-woocommerce' ) );
+
+						return;
+					}
+
+					$to = $validated_city;
 				}
-
-				$to = $validated_city;
 			}
 		}
 
 		// change postcode to EKOM index if it is selected
 		if ( in_array( $type, [ 53030, 53070 ] ) ) {
-			// plus 10 rubles for sms-notice-recipient which is required but for some reason not included in shipping price
+			// add 10 rub for sms which is required but not calculated for some reason
 			$addcost += 10;
-
 			if ( RPAEFW::is_pro_active() ) {
-				if ( $ekom_index = $this->get_ekom_index( $state, $city ) ) {
-					$to = intval( $ekom_index );
-				} else {
-//					$this->log_it( __( 'Could not find post index for EKOM shipping for this address.' . ' ' . $state . ', ' . $city, 'russian-post-and-ems-for-woocommerce' ) );
+				if ( ! $to = intval( $this->get_ekom_index( $state, $city, $type, $services ) ) ) {
 					return;
 				}
 			} else {
@@ -567,15 +582,24 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$total_val = intval( $total_val * 100 );
 
 		$base_params = array(
-			'weight' => $weight,
-			'object' => $type,
-			'sumoc'  => $total_val,
-			'sumin'  => $total_val,
+			'weight'    => $weight,
+			'sumoc'     => $total_val,
+			'sumin'     => $total_val,
+			'sum_month' => $total_val,
+			'pack'      => $this->pack ? $this->pack : 10,
+			'isavia'    => isset( $this->isavia ) ? $this->isavia : 1
 		);
 
+		$base_params[ 'object' ] = $this->match_shipping_type_based_on_payment( $type );
+
+		// add COD as service if it is selected as payment method
+		if ( $this->is_cod_used_as_payment() ) {
+			$services[] = 46;
+		}
+
 		// add additional services
-		if ( isset( $this->service ) && ! empty( $this->service ) ) {
-			$base_params[ 'service' ] = implode( ',', $this->service );
+		if ( $services ) {
+			$base_params[ 'service' ] = implode( ',', $services );
 		}
 
 		if ( $dogovor ) {
@@ -597,25 +621,20 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 
 			$base_params[ 'country' ] = $country_code_number;
-			$base_params[ 'isavia' ]  = 1;
 		} else {
 			$base_params[ 'from' ] = $from;
 			$base_params[ 'to' ]   = $to;
-
-			// check if type requires packaging
-			if ( in_array( $type, array( 27030, 27020, 29030, 29020, 28030, 28020, 53030, 53070 ) ) ) {
-				$base_params[ 'pack' ] = $this->pack ? $this->pack : 10;
-			}
 		}
 
-		$request = add_query_arg( $base_params, 'https://tariff.pochta.ru/tariff/v1/calculate?json' );
+		$request      = add_query_arg( $base_params, 'https://tariff.pochta.ru/tariff/v1/calculate?json' );
+		$request_hash = 'rpaefw_' . md5( $request );
 
-		if ( ! $shipping_cost = get_transient( $request ) ) {
-			if ( ! $shipping_cost = $this->get_data_from_api( $request, 'price' ) ) {
+		if ( ! $shipping_cost = get_transient( $request_hash ) ) {
+			if ( ! $shipping_cost = $this->get_data_from_api( $request, 'price', $base_params ) ) {
 				return;
 			}
 
-			set_transient( $request, $shipping_cost, DAY_IN_SECONDS );
+			set_transient( $request_hash, $shipping_cost, DAY_IN_SECONDS );
 		}
 
 		$shipping_class_cost = $this->get_shipping_class_cost( $package );
@@ -662,31 +681,134 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
-	 * Find index for EKOM shipping type from PRO plugin
+	 * Try to get index from PRO plugin base
 	 *
 	 * @param $shipping_state
 	 * @param $shipping_city
 	 *
-	 * @return bool|string
+	 * @return bool|int
 	 */
-	public function get_ekom_index( $shipping_state, $shipping_city ) {
-		if ( ! $file = fopen( WP_PLUGIN_DIR . '/russian-post-and-ems-pro-for-woocommerce/inc/post-data-base/pvz.txt', 'r' ) ) {
+	public function get_index_based_on_address( $shipping_state, $shipping_city ) {
+		if ( ! $file = fopen( WP_PLUGIN_DIR . '/russian-post-and-ems-pro-for-woocommerce/inc/post-data-base/index-state-city-base.txt', 'r' ) ) {
 			return false;
 		}
 
-		$ekom_index = '';
-
-		$shipping_state = intval( $shipping_state );
+		$shipping_state    = intval( $shipping_state );
+		$shipping_postcode = 0;
 
 		while ( ( $line = fgets( $file ) ) !== false ) {
 			list( $index, $state, $city ) = explode( "\t", $line );
 			if ( $shipping_state == $state && $shipping_city == $city ) {
-				$ekom_index = $index;
+				$shipping_postcode = $index;
 				break;
 			}
 		}
 
 		fclose( $file );
+
+		return $shipping_postcode ? $shipping_postcode : false;
+	}
+
+	/**
+	 * Match non cod like types of shipping and switch it to type with declared value or keep same if no match exists
+	 *
+	 * @param $type
+	 *
+	 * @return mixed
+	 */
+	public function match_shipping_type_based_on_payment( $type ) {
+		if ( ! $this->is_cod_used_as_payment() ) {
+			return $type;
+		}
+
+		$match_types = [
+			2000 => 2020, 11000 => 2020, 2010 => 2020, 11010 => 2020, 33010 => 2020, 2020 => 2020, 15000 => 15020, 15010 => 15020, 15020 => 15020, 3000 => 3020, 3010 => 3020, 3020 => 3020, 16010 => 3020, 16020 => 3020, 27030 => 27020, 27020 => 27020, 29030 => 29020, 29020 => 29020, 28030 => 28020, 28020 => 28020, 4030 => 4020, 4020 => 4020, 47030 => 47020, 47020 => 47020, 23030 => 23020, 23020 => 23020, 51030 => 51020, 51020 => 51020, 24030 => 24020, 24020 => 24020, 30030 => 30020, 30020 => 30020, 31030 => 31020, 31020 => 31020, 39000 => 39000, 40000 => 40000, 53030 => 53070, 53070 => 53070, 7030 => 7020, 7020 => 7020, 41030 => 41020, 41020 => 41020, 34030 => 34020, 34020 => 34020, 52030 => 52020, 52020 => 52020, 4031 => 4021, 4021 => 4021, 7031 => 7031, 5001 => 5001, 5011 => 5011, 3001 => 3001, 3011 => 3011, 9001 => 9001, 9011 => 9011,
+		];
+
+		return isset( $match_types[ $type ] ) ? $match_types[ $type ] : $type;
+
+	}
+
+	/**
+	 * Check if COD is chosen for payment
+	 *
+	 * @return bool
+	 */
+	public function is_cod_used_as_payment() {
+		if ( ! $chosen_payment_method = WC()->session->get( 'chosen_payment_method' ) ) {
+			return false;
+		}
+
+		return in_array( $chosen_payment_method, [ 'cod', 'codpg_russian_post' ] );
+	}
+
+	/**
+	 * Find index for EKOM shipping type from PRO plugin
+	 *
+	 * @param $shipping_state
+	 * @param $shipping_city
+	 *
+	 * @param $type
+	 * @param $services
+	 *
+	 * @return bool|string
+	 */
+	public function get_ekom_index( $shipping_state, $shipping_city, $type, $services ) {
+		if ( ! $file = fopen( WP_PLUGIN_DIR . '/russian-post-and-ems-pro-for-woocommerce/inc/post-data-base/pvz.txt', 'r' ) ) {
+			return false;
+		}
+
+		$shipping_state = intval( $shipping_state );
+		$ekom_index     = '';
+		$requirements   = [
+			'cash_payment'           => false,
+			'contents_checking'      => false,
+			'with_fitting'           => false,
+			'functionality_checking' => false,
+		];
+
+		if ( $type == 53070 ) {
+			$requirements[ 'cash_payment' ] = true;
+		}
+
+		if ( in_array( 81, $services ) ) {
+			$requirements[ 'contents_checking' ] = true;
+		}
+
+		if ( in_array( 82, $services ) ) {
+			$requirements[ 'with_fitting' ] = true;
+		}
+
+		if ( in_array( 83, $services ) ) {
+			$requirements[ 'functionality_checking' ] = true;
+		}
+
+
+		while ( ( $line = fgets( $file ) ) !== false ) {
+			list( $index, $state, $city, $address, $coordinates, $card_payment, $cash_payment, $contents_checking, $functionality_checking, $with_fitting ) = explode( "\t", $line );
+			if ( $shipping_state == $state && $shipping_city == $city ) {
+				$validated = true;
+
+				foreach ( $requirements as $name => $need ) {
+					if ( $validated && $need ) {
+						if ( ! ${$name} ) {
+							$validated = false;
+						}
+					}
+				}
+
+				if ( $validated ) {
+					$ekom_index = $index;
+					break;
+				}
+			}
+		}
+
+		fclose( $file );
+
+		if ( ! $ekom_index ) {
+			$this->log_it( sprintf( __( 'Could not find EKOM delivery point for the next address %s, type of EKOM %s, and services %s.', 'russian-post-and-ems-for-woocommerce' ), $shipping_state . ' ' . $shipping_city, $type, json_encode( $services ) ) );
+		}
 
 		return $ekom_index;
 	}
@@ -1012,9 +1134,52 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * @param $request
 	 * @param $get
 	 *
+	 * @param array $base_params
+	 *
 	 * @return mixed
 	 */
-	public function get_data_from_api( $request, $get ) {
+	public function get_data_from_api( $request, $get, $base_params = [] ) {
+
+		// this service is offline and should not be applied until further notice
+
+		// create an authorized request if PRO plugin is active
+		//		if ( RPAEFW::is_pro_active() &&
+		//		     ( $get === 'price' || $get === 'time' ) &&
+		//		     get_option( 'rpaefw_token' ) &&
+		//		     class_exists( 'RPAEFW_PRO' ) &&
+		//		     class_exists( 'RPAEFW_PRO_Helper' ) ) {
+		//
+		//			$services = isset( $base_params[ 'service' ] ) ? explode( ',', $base_params[ 'service' ] ) : [];
+		//
+		//			$body = [
+		//				"completeness-checking"  => in_array( 38, $services ),
+		//				"contents-checking"      => in_array( 81, $services ),
+		//				"courier"                => in_array( 26, $services ),
+		//				"declared-value"         => $base_params[ 'sumoc' ],
+		//				"goods-value"            => $base_params[ 'sumoc' ],
+		//				"entries-type"           => "SALE_OF_GOODS",
+		//				"payment-method"         => "CASHLESS",
+		//				"fragile"                => in_array( 4, $services ),
+		//				"index-from"             => $base_params[ 'from' ],
+		//				"index-to"               => $base_params[ 'to' ],
+		//				"delivery-point-index"   => $base_params[ 'to' ], // for ekom
+		//				"dimension-type"         => RPAEFW_PRO_Helper::get_pack_type( $base_params[ 'pack' ] ),
+		//				"inventory"              => in_array( 23, $services ),
+		//				"mail-direct"            => isset( $base_params[ 'country' ] ) ? $base_params[ 'country' ] : 643,
+		//				"mass"                   => $base_params[ 'weight' ],
+		//				"mail-category"          => RPAEFW_PRO_Helper::get_mail_category( $base_params[ 'object' ] ),
+		//				"mail-type"              => RPAEFW_PRO_Helper::get_mail_type( $base_params[ 'object' ] ),
+		//				'with-electronic-notice' => in_array( 62, $services ),
+		//				"sms-notice-recipient"   => in_array( 64, $services ),
+		//				"with-order-of-notice"   => in_array( 2, $services ),
+		//				"with-simple-notice"     => in_array( 1, $services ),
+		//			];
+		//
+		//			$request = RPAEFW_PRO::get_data_from_api( '/1.0/tariff', 'POST', $body );
+		//
+		//			return $request;
+		//		}
+
 		$remote_response = wp_remote_get( $request, [ 'timeout' => 15 ] );
 		$this->log_it( __( 'Making request to get:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . $request );
 

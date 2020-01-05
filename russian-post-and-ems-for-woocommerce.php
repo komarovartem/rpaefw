@@ -2,7 +2,7 @@
 /*
 Plugin Name: Russian Post and EMS for WooCommerce
 Description: The plugin allows you to automatically calculate the shipping cost for "Russian Post" or "EMS"
-Version: 1.2.8
+Version: 1.2.9
 Author: Artem Komarov
 Author URI: mailto:yumecommerce@gmail.com
 License: GPLv3
@@ -19,29 +19,33 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RPAEFW {
 	public function __construct() {
 		// apply plugin textdomain
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+		add_action( 'plugins_loaded', [ $this, 'load_textdomain' ] );
+
+		add_action( 'wp_enqueue_scripts', [ $this, 'load_scripts' ] );
 
 		// add new order status
-		add_action( 'init', array( $this, 'register_order_confirmed_order_status' ) );
-		add_filter( 'wc_order_statuses', array( $this, 'add_order_confirmed_to_order_statuses' ), 10, 1 );
+		add_action( 'init', [ $this, 'register_order_confirmed_order_status' ] );
+		add_filter( 'wc_order_statuses', [ $this, 'add_order_confirmed_to_order_statuses' ], 10, 1 );
 
 		// add email template for tracking code
-		add_filter( 'woocommerce_email_classes', array( $this, 'expedited_woocommerce_email' ) );
-		add_filter( 'woocommerce_email_actions', array( $this, 'woocommerce_email_add_actions' ) );
+		add_filter( 'woocommerce_email_classes', [ $this, 'expedited_woocommerce_email' ] );
+		add_filter( 'woocommerce_email_actions', [ $this, 'woocommerce_email_add_actions' ] );
 
 		// tracking code meta box and email sending
-		add_action( 'add_meta_boxes', array( $this, 'add_meta_tracking_code_box' ) );
-		add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_tracking_code' ), 0, 2 );
+		add_action( 'add_meta_boxes', [ $this, 'add_meta_tracking_code_box' ], 10, 2 );
+		add_action( 'woocommerce_process_shop_order_meta', [ $this, 'save_tracking_code' ], 0, 2 );
 
 		// add new shipping method
-		add_action( 'woocommerce_shipping_init', array( $this, 'init_method' ) );
-		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_method' ) );
+		add_action( 'woocommerce_shipping_init', [ $this, 'init_method' ] );
+		add_filter( 'woocommerce_shipping_methods', [ $this, 'register_method' ] );
 
 		// validate postcode for Russia
-		add_filter( 'woocommerce_validate_postcode', array( $this, 'validate_postcode' ), 10, 3 );
+		add_filter( 'woocommerce_validate_postcode', [ $this, 'validate_postcode' ], 10, 3 );
 
-		add_filter( 'woocommerce_get_sections_shipping', array( $this, 'settings_page' ) );
-		add_filter( 'woocommerce_get_settings_shipping', array( $this, 'settings' ), 10, 2 );
+		add_filter( 'woocommerce_get_sections_shipping', [ $this, 'settings_page' ] );
+		add_filter( 'woocommerce_get_settings_shipping', [ $this, 'settings' ], 10, 2 );
+
+		add_action( 'woocommerce_checkout_update_order_review', [$this, 'switch_debug_on']);
 	}
 
 	/**
@@ -49,6 +53,18 @@ class RPAEFW {
 	 */
 	public function load_textdomain() {
 		load_plugin_textdomain( 'russian-post-and-ems-for-woocommerce' );
+	}
+
+
+	/**
+	 * Load checkout scripts
+	 */
+	public function load_scripts() {
+		if ( is_checkout() ) {
+			wp_enqueue_script( 'rpaefw-checkout', plugin_dir_url( __FILE__ ) . '/assets/js/checkout.js', [
+				'jquery',
+			], '1.2.9', true );
+		}
 	}
 
 	/**
@@ -93,8 +109,8 @@ class RPAEFW {
 	 * @return array
 	 */
 	public function expedited_woocommerce_email( $email_classes ) {
-		if ( ! class_exists( 'RPAEFW_Postcode_Tracking_Code_Class' ) ) {
-			$email_classes[ 'RPAEFW_Postcode_Tracking_Code_Class' ] = include_once( dirname( __FILE__ ) . '/inc/class-postcode-tracking-code.php' );
+		if ( ! class_exists( 'RPAEFW_Tracking_Code' ) ) {
+			$email_classes[ 'RPAEFW_Tracking_Code' ] = include_once( dirname( __FILE__ ) . '/inc/class-rpaefw-tracking-code.php' );
 		}
 
 		return $email_classes;
@@ -115,8 +131,29 @@ class RPAEFW {
 
 	/**
 	 * Add meta box with tracking code
+	 *
+	 * @param $post_type
+	 * @param $post
 	 */
-	function add_meta_tracking_code_box() {
+	function add_meta_tracking_code_box( $post_type, $post ) {
+		if ( $post_type != 'shop_order' ) {
+			return;
+		}
+
+		$order     = wc_get_order( $post );
+		$method_id = 0;
+
+		foreach ( $order->get_shipping_methods() as $shipping ) {
+			if ( $shipping->get_method_id() == 'rpaefw_post_calc' ) {
+				$method_id = $shipping->get_instance_id();
+			}
+		}
+
+		// do not display box if russian post shipping is not used
+		if ( ! $method_id ) {
+			return;
+		}
+
 		add_meta_box( 'rpaefw_meta_tracking_code', esc_html__( 'Tracking Code', 'russian-post-and-ems-for-woocommerce' ), array(
 			$this,
 			'tracking_code_meta_box'
@@ -129,13 +166,10 @@ class RPAEFW {
 	function tracking_code_meta_box() {
 		global $post;
 
-		$post_tracking_number = sanitize_text_field( get_post_meta( $post->ID, 'post_tracking_number', true ) );
-		$ems_tracking_number  = sanitize_text_field( get_post_meta( $post->ID, 'ems_tracking_number', true ) );
+		$post_tracking_number = sanitize_text_field( get_post_meta( $post->ID, '_post_tracking_number', true ) );
 
-		echo '<p><label for="rpaefw_postcode_tracking_provider" style="width: 50px; display: inline-block;">' . esc_html__( 'Russian Post', 'russian-post-and-ems-for-woocommerce' ) . ':</label>';
+		echo '<p><label for="rpaefw_postcode_tracking_provider" style="width: 50px; display: inline-block;">' . esc_html__( 'Code', 'russian-post-and-ems-for-woocommerce' ) . ':</label>';
 		echo '<input type="text" id="rpaefw_postcode_tracking_provider" name="rpaefw_postcode_tracking_provider" value="' . $post_tracking_number . '"/></p>';
-		echo '<p><label for="rpaefw_ems_tracking_provider" style="width: 50px; display: inline-block;">EMS:</label>';
-		echo '<input type="text" id="rpaefw_ems_tracking_provider" name="rpaefw_ems_tracking_provider" value="' . $ems_tracking_number . '"/></p>';
 		echo '<p><input type="submit" class="add_note button" name="save" value="' . esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) . '"></p>';
 	}
 
@@ -152,14 +186,12 @@ class RPAEFW {
 
 		if ( $_POST[ 'rpaefw_postcode_tracking_provider' ] != '' || $_POST[ 'rpaefw_ems_tracking_provider' ] != '' ) {
 			$post_tracking_number = sanitize_text_field( $_POST[ 'rpaefw_postcode_tracking_provider' ] );
-			$ems_tracking_number  = sanitize_text_field( $_POST[ 'rpaefw_ems_tracking_provider' ] );
 
-			update_post_meta( $post_id, 'post_tracking_number', $post_tracking_number );
-			update_post_meta( $post_id, 'ems_tracking_number', $ems_tracking_number );
+			update_post_meta( $post_id, '_post_tracking_number', $post_tracking_number );
 
 			$comment_post_ID    = $post_id;
 			$comment_author_url = '';
-			$comment_content    = sprintf( esc_html__( 'Email with tracking number: %s, was sent to customer', 'russian-post-and-ems-for-woocommerce' ), $post_tracking_number . $ems_tracking_number );
+			$comment_content    = sprintf( esc_html__( 'Email with tracking number: %s, was sent to customer', 'russian-post-and-ems-for-woocommerce' ), $post_tracking_number );
 			$comment_agent      = 'WooCommerce';
 			$comment_type       = 'order_note';
 			$comment_parent     = 0;
@@ -175,19 +207,13 @@ class RPAEFW {
 
 			do_action( 'rpaefw_tracking_code_send', array(
 				'order_id'      => $post_id,
-				'customer_note' => $post_tracking_number . $ems_tracking_number,
-				'ems_field'     => $ems_tracking_number == '' ? false : true
+				'customer_note' => $post_tracking_number,
 			) );
 		}
 	}
 
 	/**
 	 * Add shipping method
-	 *
-	 * @param $methods
-	 *
-	 * @return array
-	 *
 	 */
 	function init_method() {
 		if ( ! class_exists( 'RPAEFW_Shipping_Method' ) ) {
@@ -228,18 +254,32 @@ class RPAEFW {
 		return $valid;
 	}
 
+	/**
+	 * Register settings page
+	 *
+	 * @param $sections
+	 *
+	 * @return mixed
+	 */
 	public function settings_page( $sections ) {
 		$sections[ 'rpaefw' ] = esc_html__( 'Russian Post', 'russian-post-and-ems-for-woocommerce' );
 
 		return $sections;
 	}
 
+	/**
+	 * Main settings page
+	 *
+	 * @param $settings
+	 * @param $current_section
+	 *
+	 * @return array|mixed
+	 */
 	public function settings( $settings, $current_section ) {
 		if ( $current_section == 'rpaefw' ) {
 			$settings = [
 				[
 					'title' => esc_html__( 'Russian Post', 'russian-post-and-ems-for-woocommerce' ),
-					'desc'  => esc_html__( 'Title', 'russian-post-and-ems-for-woocommerce' ),
 					'type'  => 'title',
 					'id'    => 'rpaefw_shipping_options'
 				],
@@ -282,6 +322,12 @@ class RPAEFW {
 		return $settings;
 	}
 
+	/**
+	 * Check if PRO plugin active
+	 * Used in many places to load PRO content and functionality
+	 *
+	 * @return bool
+	 */
 	public static function is_pro_active() {
 		if ( in_array( 'russian-post-and-ems-pro-for-woocommerce/russian-post-and-ems-pro-for-woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
 			return true;
@@ -290,8 +336,23 @@ class RPAEFW {
 		return false;
 	}
 
+	/**
+	 * Helper function to avoid typing same strings
+	 *
+	 * @return string
+	 */
 	public static function only_in_pro_ver_text() {
 		return RPAEFW::is_pro_active() ? '' : 'Доступно только в PRO версии. ';
+	}
+
+	/**
+	 * Happens during AJAX on checkout update
+	 * This function helps recalculate shipping cost if COD is selected by skipping hash on calculate_shipping_for_package
+	 */
+	public function switch_debug_on() {
+		add_filter( "option_woocommerce_shipping_debug_mode", function () {
+			return 'yes';
+		} );
 	}
 }
 

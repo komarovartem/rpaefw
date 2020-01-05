@@ -9,11 +9,8 @@ echo "= " . $email_heading . " =\n\n";
 printf( esc_html__( 'Hi %s,', 'russian-post-and-ems-for-woocommerce' ), esc_html( $recipientname ) );
 echo "\n\n";
 
-if ( $ems_field ) {
-	esc_html_e( 'Your order was sent by EMS', 'russian-post-and-ems-for-woocommerce' );
-} else {
 	esc_html_e( 'Your order was sent by Russian Post', 'russian-post-and-ems-for-woocommerce' );
-}
+
 	echo ' ';
 	esc_html_e( 'and it has the following tracking number:', 'russian-post-and-ems-for-woocommerce' );
 
@@ -27,7 +24,7 @@ echo "----------\n\n";
 
 esc_html_e( 'You can track your package on the official website.', 'russian-post-and-ems-for-woocommerce' );
 echo "\n\n";
-echo $ems_field ? 'https://www.pochta.ru/tracking?utm_source=emspost#' . $customer_note : 'https://www.pochta.ru/tracking#' . $customer_note;
+echo 'https://www.pochta.ru/tracking#' . $customer_note;
 echo "\n\n";
 
 echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\n\n";

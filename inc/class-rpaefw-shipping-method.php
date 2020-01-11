@@ -31,7 +31,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			),
 			'from'       => array(
 				'title'       => esc_html__( 'Оrigin Postcode', 'russian-post-and-ems-for-woocommerce' ),
-				'description' => esc_html__( 'Optional. Postcode of the sender. By default equals to the store postcode. You can specify different from store address one if there is a need.', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Optional. Postcode of the sender. By default equals to the OPS Service postcode or store postcode. You can specify different from store address one if there is a need.', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'number',
 			),
 			'type'       => array(
@@ -94,8 +94,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					5011  => 'Международные отправления. Мелкий пакет заказной (2кг)',
 					3001  => 'Международные отправления. Бандероль простая (5кг)',
 					3011  => 'Международные отправления. Бандероль заказная (5кг)',
-					9001  => 'Международные отправления. Мешок М простой  (14.5кг)',
-					9011  => 'Международные отправления. Мешок М заказной  (14.5кг)',
+//                  hide it no matching type for https://otpravka.pochta.ru/specification#/enums-base-mail-type
+//					9001  => 'Международные отправления. Мешок М простой  (14.5кг)',
+//					9011  => 'Международные отправления. Мешок М заказной  (14.5кг)',
 				)
 			),
 			'pack'       => array(
@@ -411,20 +412,22 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	public function calculate_shipping( $package = array() ) {
 		global $woocommerce;
 
-		$from         = $this->from ? $this->from : get_option( 'woocommerce_store_postcode' );
-		$to           = '';
+		$ops_index    = get_option( 'rpaefw_ops_index' ) ? : get_option( 'woocommerce_store_postcode' );
+		$from         = $this->from ? $this->from : $ops_index;
 		$type         = $this->type;
 		$dogovor      = get_option( 'rpaefw_dogovor' );
-		$time         = '';
 		$country_code = $package[ 'destination' ][ 'country' ] ? $package[ 'destination' ][ 'country' ] : 'RU';
 		$postal_code  = wc_format_postcode( $package[ 'destination' ][ 'postcode' ], $country_code );
 		$state        = $package[ 'destination' ][ 'state' ];
 		$city         = $package[ 'destination' ][ 'city' ];
 		$services     = ( isset( $this->service ) && ! empty( $this->service ) ) ? $this->service : [];
+		$to           = '';
+		$time         = '';
+		$time_pro     = ''; // store time here in case PRO
 
 		// get weight of the cart
 		// normalise weights, unify to g
-		$weight = wc_get_weight( $woocommerce->cart->cart_contents_weight, 'g' );
+		$weight = ceil( wc_get_weight( $woocommerce->cart->cart_contents_weight, 'g' ) );
 
 		// plus pack weight
 		$weight += intval( $this->addpackweight );
@@ -469,6 +472,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			$type = $new_type ? $new_type : 27030;
 		}
 
+		// change type if COD is selected
 		$type = $this->match_shipping_type_based_on_payment( $type );
 
 		// if postal code is empty take city
@@ -582,15 +586,16 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			$total_val = $this->get_currency_value( $currency, $total_val, false );
 		}
 
-		$total_val = intval( $total_val * 100 );
+		$total_val = ceil( $total_val * 100 );
 
 		$base_params = array(
-			'weight'    => $weight,
+			'weight'    => ceil( $weight ),
 			'sumoc'     => $total_val,
 			'sumin'     => $total_val,
 			'sum_month' => $total_val,
 			'pack'      => $this->pack ? $this->pack : 10,
 			'isavia'    => isset( $this->isavia ) ? $this->isavia : 1,
+			'from'      => $from,
 			'object'    => $type
 		);
 
@@ -624,8 +629,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 			$base_params[ 'country' ] = $country_code_number;
 		} else {
-			$base_params[ 'from' ] = $from;
-			$base_params[ 'to' ]   = $to;
+			$base_params[ 'to' ] = $to;
 		}
 
 		$request      = add_query_arg( $base_params, 'https://tariff.pochta.ru/tariff/v1/calculate?json' );
@@ -637,6 +641,16 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 
 			set_transient( $request_hash, $shipping_cost, DAY_IN_SECONDS );
+		}
+
+		// in case PRO plugin has return data
+		if ( is_array( $shipping_cost ) ) {
+			// it could be request for international shipping which has not delivery time option
+			if ( isset( $shipping_cost[ 'delivery-time' ] ) ) {
+				$time_pro = $shipping_cost[ 'delivery-time' ][ 'max-days' ];
+			}
+
+			$shipping_cost = ( $shipping_cost[ 'total-rate' ] + $shipping_cost[ 'total-vat' ] ) / 100;
 		}
 
 		$shipping_class_cost = $this->get_shipping_class_cost( $package );
@@ -657,20 +671,22 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		// show delivery time
 		if ( $this->time === 'yes' && $country_code == 'RU' ) {
-			$request = add_query_arg( array(
-				'from'   => $from,
-				'to'     => $to,
-				'object' => $type,
-			), 'https://delivery.pochta.ru/delivery/v1/calculate?json' );
+			if ( ! $delivery_time = $time_pro ) {
+				$request = add_query_arg( array(
+					'from'   => $from,
+					'to'     => $to,
+					'object' => $type,
+				), 'https://delivery.pochta.ru/delivery/v1/calculate?json' );
 
-			$request_hash = 'rpaefw_' . md5( $request );
+				$request_hash = 'rpaefw_' . md5( $request );
 
-			if ( ! $delivery_time = get_transient( $request_hash ) ) {
-				if ( $delivery_time = $this->get_data_from_api( $request, 'time' ) ) {
-					set_transient( $request_hash, $delivery_time, DAY_IN_SECONDS * 30 );
+				if ( ! $delivery_time = get_transient( $request_hash ) ) {
+					if ( $delivery_time = $this->get_data_from_api( $request, 'time' ) ) {
+						set_transient( $request_hash, $delivery_time, DAY_IN_SECONDS * 30 );
 
-					if ( isset( $this->add_time ) && $this->add_time ) {
-						$delivery_time += intval( $this->add_time );
+						if ( isset( $this->add_time ) && $this->add_time ) {
+							$delivery_time += intval( $this->add_time );
+						}
 					}
 				}
 			}
@@ -887,7 +903,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Work out fee (shortcode).
 	 *
-	 * @param  array $atts Attributes.
+	 * @param array $atts Attributes.
 	 *
 	 * @return string
 	 */
@@ -923,8 +939,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Evaluate a cost from a sum/string.
 	 *
-	 * @param  string $sum Sum of shipping.
-	 * @param  array $args Args.
+	 * @param string $sum Sum of shipping.
+	 * @param array $args Args.
 	 *
 	 * @return string
 	 */
@@ -1147,45 +1163,14 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 */
 	public function get_data_from_api( $request, $get, $base_params = [] ) {
 
-		// this service is offline and should not be applied until further notice
+		if ( RPAEFW::is_pro_active() &&
+		     ( $get === 'price' ) &&
+		     get_option( 'rpaefw_token' ) &&
+		     class_exists( 'RPAEFW_PRO' ) &&
+		     class_exists( 'RPAEFW_PRO_Helper' ) ) {
 
-		// create an authorized request if PRO plugin is active
-		//		if ( RPAEFW::is_pro_active() &&
-		//		     ( $get === 'price' || $get === 'time' ) &&
-		//		     get_option( 'rpaefw_token' ) &&
-		//		     class_exists( 'RPAEFW_PRO' ) &&
-		//		     class_exists( 'RPAEFW_PRO_Helper' ) ) {
-		//
-		//			$services = isset( $base_params[ 'service' ] ) ? explode( ',', $base_params[ 'service' ] ) : [];
-		//
-		//			$body = [
-		//				"completeness-checking"  => in_array( 38, $services ),
-		//				"contents-checking"      => in_array( 81, $services ),
-		//				"courier"                => in_array( 26, $services ),
-		//				"declared-value"         => $base_params[ 'sumoc' ],
-		//				"goods-value"            => $base_params[ 'sumoc' ],
-		//				"entries-type"           => "SALE_OF_GOODS",
-		//				"payment-method"         => "CASHLESS",
-		//				"fragile"                => in_array( 4, $services ),
-		//				"index-from"             => $base_params[ 'from' ],
-		//				"index-to"               => $base_params[ 'to' ],
-		//				"delivery-point-index"   => $base_params[ 'to' ], // for ekom
-		//				"dimension-type"         => RPAEFW_PRO_Helper::get_pack_type( $base_params[ 'pack' ] ),
-		//				"inventory"              => in_array( 23, $services ),
-		//				"mail-direct"            => isset( $base_params[ 'country' ] ) ? $base_params[ 'country' ] : 643,
-		//				"mass"                   => $base_params[ 'weight' ],
-		//				"mail-category"          => RPAEFW_PRO_Helper::get_mail_category( $base_params[ 'object' ] ),
-		//				"mail-type"              => RPAEFW_PRO_Helper::get_mail_type( $base_params[ 'object' ] ),
-		//				'with-electronic-notice' => in_array( 62, $services ),
-		//				"sms-notice-recipient"   => in_array( 64, $services ),
-		//				"with-order-of-notice"   => in_array( 2, $services ),
-		//				"with-simple-notice"     => in_array( 1, $services ),
-		//			];
-		//
-		//			$request = RPAEFW_PRO::get_data_from_api( '/1.0/tariff', 'POST', $body );
-		//
-		//			return $request;
-		//		}
+			return $this->get_data_from_pro_api( $base_params );
+		}
 
 		$remote_response = wp_remote_get( $request, [ 'timeout' => 15 ] );
 		$this->log_it( __( 'Making request to get:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . $request );
@@ -1234,6 +1219,57 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
+	 * create an authorized request if PRO plugin is active
+	 *
+	 * @return bool|mixed|null
+	 */
+	public function get_data_from_pro_api( $base_params ) {
+		$services = isset( $base_params[ 'service' ] ) ? explode( ',', $base_params[ 'service' ] ) : [];
+
+		$body = [
+			'completeness-checking'  => in_array( 38, $services ),
+			'contents-checking'      => in_array( 81, $services ),
+			'courier'                => in_array( 26, $services ),
+			'declared-value'         => $base_params[ 'sumoc' ],
+			'goods-value'            => $base_params[ 'sumoc' ],
+			'entries-type'           => 'SALE_OF_GOODS',
+			'payment-method'         => 'CASHLESS',
+			'fragile'                => in_array( 4, $services ),
+			'index-from'             => $base_params[ 'from' ],
+			'dimension-type'         => RPAEFW_PRO_Helper::get_pack_type( $base_params[ 'pack' ] ),
+			'inventory'              => in_array( 23, $services ),
+			'mail-direct'            => isset( $base_params[ 'country' ] ) ? $base_params[ 'country' ] : 643,
+			'mass'                   => $base_params[ 'weight' ],
+			'mail-category'          => RPAEFW_PRO_Helper::get_mail_category( $base_params[ 'object' ] ),
+			'mail-type'              => RPAEFW_PRO_Helper::get_mail_type( $base_params[ 'object' ] ),
+			'with-electronic-notice' => in_array( 62, $services ),
+			'sms-notice-recipient'   => intval( in_array( 64, $services ) ),
+			'with-order-of-notice'   => in_array( 2, $services ),
+			'with-simple-notice'     => in_array( 1, $services ),
+			'with-fitting'           => in_array( 82, $services ),
+			'functionality-checking' => in_array( 83, $services ),
+			'vsd'                    => in_array( 66, $services ),
+		];
+
+		// add params if shipping within Russia
+		if ( $body[ 'mail-direct' ] == 643 ) {
+			$body[ 'index-to' ]             = $base_params[ 'to' ];
+			$body[ 'delivery-point-index' ] = $base_params[ 'to' ]; // for ekom
+		}
+
+		$request = RPAEFW_PRO::get_data_from_api( '/1.0/tariff', 'POST', $body );
+
+		if ( isset( $request[ 'error' ] ) || isset( $request[ 'code' ] ) ) {
+			$this->maybe_print_error( __( 'Error during shipping calculation. Check WooCommerce Log for more information', 'russian-post-and-ems-for-woocommerce' ) );
+			$this->log_it( __( 'Could not calculate shipping via /1.0/tariff.' ) . ' ' . json_encode( $request ) . ' Body: ' . json_encode( $body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT ), 'error' );
+
+			return false;
+		}
+
+		return $request;
+	}
+
+	/**
 	 * Return country number for Russian Post api base
 	 *
 	 * @param $code
@@ -1242,286 +1278,23 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 */
 	public function get_country_number( $code ) {
 		$countries = array(
-			'AU' => '36',
-			'AT' => '40',
-			'AZ' => '31',
-			'AX' => '949',
-			'AL' => '8',
-			'DZ' => '12',
-			'AS' => '16',
-			'AI' => '660',
-			'AO' => '24',
-			'AD' => '20',
-			'AQ' => '10',
-			'AG' => '28',
-			'AR' => '32',
-			'AM' => '51',
-			'AW' => '533',
-			'AF' => '4',
-			'BS' => '44',
-			'BD' => '50',
-			'BB' => '52',
-			'BH' => '48',
-			'BY' => '112',
-			'BZ' => '84',
-			'BE' => '56',
-			'BJ' => '204',
-			'BM' => '60',
-			'BG' => '100',
-			'BO' => '68',
-			'BQ' => '535',
-			'BA' => '70',
-			'BW' => '72',
-			'BR' => '76',
-			'VG' => '92',
-			'BN' => '96',
-			'BF' => '854',
-			'BI' => '108',
-			'BT' => '64',
-			'VU' => '548',
-			'VA' => '336',
-			'GB' => '826',
-			'HU' => '348',
-			'VE' => '862',
-			'VI' => '850',
-			'UM' => '581',
-			'TL' => '626',
-			'VN' => '704',
-			'GA' => '266',
-			'HT' => '332',
-			'GY' => '328',
-			'GM' => '270',
-			'GH' => '288',
-			'GP' => '312',
-			'GT' => '320',
-			'GN' => '324',
-			'GW' => '624',
-			'DE' => '276',
-			'GG' => '831',
-			'GI' => '292',
-			'HN' => '340',
-			'HK' => '344',
-			'GD' => '308',
-			'GL' => '304',
-			'GR' => '300',
-			'GE' => '268',
-			'GU' => '316',
-			'DK' => '208',
-			'JE' => '832',
-			'DJ' => '262',
-			'DM' => '212',
-			'DO' => '214',
-			'EG' => '818',
-			'ZM' => '894',
-			'EH' => '732',
-			'ZW' => '716',
-			'IL' => '376',
-			'IN' => '356',
-			'ID' => '360',
-			'JO' => '400',
-			'IQ' => '368',
-			'IR' => '364',
-			'IE' => '372',
-			'IS' => '352',
-			'ES' => '724',
-			'IT' => '380',
-			'YE' => '887',
-			'CV' => '132',
-			'KZ' => '398',
-			'KY' => '136',
-			'KH' => '116',
-			'CM' => '120',
-			'CA' => '124',
-			'QA' => '634',
-			'KE' => '404',
-			'CY' => '196',
-			'KI' => '296',
-			'CN' => '156',
-			'CC' => '166',
-			'CO' => '170',
-			'KM' => '174',
-			'CG' => '180',
-			'CD' => '178',
-			'CR' => '188',
-			'CI' => '384',
-			'CU' => '192',
-			'KW' => '414',
-			'KG' => '417',
-			'CW' => '531',
-			'LA' => '418',
-			'LV' => '428',
-			'LS' => '426',
-			'LR' => '430',
-			'LB' => '422',
-			'LY' => '434',
-			'LT' => '440',
-			'LI' => '438',
-			'LU' => '442',
-			'MU' => '480',
-			'MR' => '478',
-			'MG' => '450',
-			'YT' => '175',
-			'MO' => '446',
-			'MK' => '807',
-			'MW' => '454',
-			'MY' => '458',
-			'ML' => '466',
-			'MV' => '462',
-			'MT' => '470',
-			'MA' => '504',
-			'MQ' => '474',
-			'MH' => '584',
-			'MX' => '484',
-			'FM' => '583',
-			'MZ' => '508',
-			'MD' => '498',
-			'MC' => '492',
-			'MN' => '496',
-			'MS' => '500',
-			'MM' => '104',
-			'NA' => '516',
-			'NR' => '520',
-			'NP' => '524',
-			'NE' => '562',
-			'NG' => '566',
-			'NL' => '528',
-			'NI' => '558',
-			'NU' => '570',
-			'NZ' => '554',
-			'NC' => '540',
-			'NO' => '578',
-			'AE' => '784',
-			'OM' => '784',
-			'BV' => '74',
-			'IM' => '833',
-			'NF' => '574',
-			'CX' => '162',
-			'SH' => '906',
-			'HM' => '334',
-			'CK' => '184',
-			'PK' => '586',
-			'PW' => '585',
-			'PS' => '275',
-			'PA' => '591',
-			'PG' => '598',
-			'PY' => '600',
-			'PE' => '604',
-			'PN' => '612',
-			'PL' => '616',
-			'PT' => '620',
-			'PR' => '630',
-			'RE' => '638',
-			'RW' => '646',
-			'RO' => '642',
-			'SV' => '222',
-			'WS' => '882',
-			'SM' => '674',
-			'ST' => '678',
-			'SA' => '682',
-			'SZ' => '748',
-			'KP' => '410',
-			'MP' => '580',
-			'SC' => '690',
-			'BL' => '652',
-			'SX' => '534',
-			'MF' => '534',
-			'PM' => '666',
-			'SN' => '686',
-			'VC' => '670',
-			'KN' => '659',
-			'LC' => '662',
-			'RS' => '662',
-			'SG' => '702',
-			'SY' => '760',
-			'SK' => '760',
-			'SI' => '705',
-			'US' => '840',
-			'SB' => '90',
-			'SO' => '706',
-			'SD' => '729',
-			'SR' => '729',
-			'SL' => '694',
-			'TJ' => '762',
-			'TW' => '158',
-			'TH' => '764',
-			'TZ' => '834',
-			'TC' => '796',
-			'TG' => '768',
-			'TK' => '772',
-			'TO' => '776',
-			'TT' => '780',
-			'TV' => '798',
-			'TN' => '788',
-			'TM' => '795',
-			'TR' => '792',
-			'UG' => '800',
-			'UZ' => '860',
-			'UA' => '804',
-			'WF' => '876',
-			'UY' => '858',
-			'FO' => '234',
-			'FJ' => '242',
-			'PH' => '608',
-			'FI' => '246',
-			'FK' => '238',
-			'FR' => '250',
-			'GF' => '254',
-			'PF' => '258',
-			'TF' => '260',
-			'HR' => '258',
-			'CF' => '140',
-			'TD' => '140',
-			'ME' => '499',
-			'CZ' => '203',
-			'CL' => '152',
-			'CH' => '756',
-			'SE' => '752',
-			'SJ' => '744',
-			'LK' => '144',
-			'EC' => '218',
-			'GQ' => '226',
-			'ER' => '232',
-			'EE' => '233',
-			'ET' => '231',
-			'ZA' => '710',
-			'GS' => '239',
-			'KR' => '410',
-			'SS' => '728',
-			'JM' => '388',
-			'JP' => '392',
+			'AU' => 36, 'AT' => 40, 'AZ' => 31, 'AX' => 949, 'AL' => 8, 'DZ' => 12, 'AS' => 16, 'AI' => 660, 'AO' => 24, 'AD' => 20, 'AQ' => 10, 'AG' => 28, 'AR' => 32, 'AM' => 51, 'AW' => 533, 'AF' => 4, 'BS' => 44, 'BD' => 50, 'BB' => 52, 'BH' => 48, 'BY' => 112, 'BZ' => 84, 'BE' => 56, 'BJ' => 204, 'BM' => 60, 'BG' => 100, 'BO' => 68, 'BQ' => 535, 'BA' => 70, 'BW' => 72, 'BR' => 76, 'VG' => 92, 'BN' => 96, 'BF' => 854, 'BI' => 108, 'BT' => 64, 'VU' => 548, 'VA' => 336, 'GB' => 826, 'HU' => 348, 'VE' => 862, 'VI' => 850, 'UM' => 581, 'TL' => 626, 'VN' => 704, 'GA' => 266, 'HT' => 332, 'GY' => 328, 'GM' => 270, 'GH' => 288, 'GP' => 312, 'GT' => 320, 'GN' => 324, 'GW' => 624, 'DE' => 276, 'GG' => 831, 'GI' => 292, 'HN' => 340, 'HK' => 344, 'GD' => 308, 'GL' => 304, 'GR' => 300, 'GE' => 268, 'GU' => 316, 'DK' => 208, 'JE' => 832, 'DJ' => 262, 'DM' => 212, 'DO' => 214, 'EG' => 818, 'ZM' => 894, 'EH' => 732, 'ZW' => 716, 'IL' => 376, 'IN' => 356, 'ID' => 360, 'JO' => 400, 'IQ' => 368, 'IR' => 364, 'IE' => 372, 'IS' => 352, 'ES' => 724, 'IT' => 380, 'YE' => 887, 'CV' => 132, 'KZ' => 398, 'KY' => 136, 'KH' => 116, 'CM' => 120, 'CA' => 124, 'QA' => 634, 'KE' => 404, 'CY' => 196, 'KI' => 296, 'CN' => 156, 'CC' => 166, 'CO' => 170, 'KM' => 174, 'CG' => 180, 'CD' => 178, 'CR' => 188, 'CI' => 384, 'CU' => 192, 'KW' => 414, 'KG' => 417, 'CW' => 531, 'LA' => 418, 'LV' => 428, 'LS' => 426, 'LR' => 430, 'LB' => 422, 'LY' => 434, 'LT' => 440, 'LI' => 438, 'LU' => 442, 'MU' => 480, 'MR' => 478, 'MG' => 450, 'YT' => 175, 'MO' => 446, 'MK' => 807, 'MW' => 454, 'MY' => 458, 'ML' => 466, 'MV' => 462, 'MT' => 470, 'MA' => 504, 'MQ' => 474, 'MH' => 584, 'MX' => 484, 'FM' => 583, 'MZ' => 508, 'MD' => 498, 'MC' => 492, 'MN' => 496, 'MS' => 500, 'MM' => 104, 'NA' => 516, 'NR' => 520, 'NP' => 524, 'NE' => 562, 'NG' => 566, 'NL' => 528, 'NI' => 558, 'NU' => 570, 'NZ' => 554, 'NC' => 540, 'NO' => 578, 'AE' => 784, 'OM' => 784, 'BV' => 74, 'IM' => 833, 'NF' => 574, 'CX' => 162, 'SH' => 906, 'HM' => 334, 'CK' => 184, 'PK' => 586, 'PW' => 585, 'PS' => 275, 'PA' => 591, 'PG' => 598, 'PY' => 600, 'PE' => 604, 'PN' => 612, 'PL' => 616, 'PT' => 620, 'PR' => 630, 'RE' => 638, 'RW' => 646, 'RO' => 642, 'SV' => 222, 'WS' => 882, 'SM' => 674, 'ST' => 678, 'SA' => 682, 'SZ' => 748, 'KP' => 410, 'MP' => 580, 'SC' => 690, 'BL' => 652, 'SX' => 534, 'MF' => 534, 'PM' => 666, 'SN' => 686, 'VC' => 670, 'KN' => 659, 'LC' => 662, 'RS' => 662, 'SG' => 702, 'SY' => 760, 'SK' => 760, 'SI' => 705, 'US' => 840, 'SB' => 90, 'SO' => 706, 'SD' => 729, 'SR' => 729, 'SL' => 694, 'TJ' => 762, 'TW' => 158, 'TH' => 764, 'TZ' => 834, 'TC' => 796, 'TG' => 768, 'TK' => 772, 'TO' => 776, 'TT' => 780, 'TV' => 798, 'TN' => 788, 'TM' => 795, 'TR' => 792, 'UG' => 800, 'UZ' => 860, 'UA' => 804, 'WF' => 876, 'UY' => 858, 'FO' => 234, 'FJ' => 242, 'PH' => 608, 'FI' => 246, 'FK' => 238, 'FR' => 250, 'GF' => 254, 'PF' => 258, 'TF' => 260, 'HR' => 258, 'CF' => 140, 'TD' => 140, 'ME' => 499, 'CZ' => 203, 'CL' => 152, 'CH' => 756, 'SE' => 752, 'SJ' => 744, 'LK' => 144, 'EC' => 218, 'GQ' => 226, 'ER' => 232, 'EE' => 233, 'ET' => 231, 'ZA' => 710, 'GS' => 239, 'KR' => 410, 'SS' => 728, 'JM' => 388, 'JP' => 392,
 		);
 
 		return isset( $countries[ $code ] ) ? $countries[ $code ] : false;
 	}
 
 
+	/**
+	 * In case old plugin version of shipping type is presented
+	 *
+	 * @param $old_value
+	 *
+	 * @return bool|mixed
+	 */
 	public function get_new_id_shipping_type( $old_value ) {
 		$old_types = [
-			'ПростаяБандероль'           => 3000,
-			'ЗаказнаяБандероль'          => 3010,
-			'ЗаказнаяБандероль1Класс'    => 16010,
-			'ЦеннаяБандероль'            => 3020,
-			'ЦеннаяБандероль1Класс'      => 16020,
-			'ПростаяПосылка'             => 27030,
-			'ЦеннаяПосылка'              => 27020,
-			'Посылка1Класс'              => 47020,
-			'EMS'                        => 7020,
-			'МждМешокМ'                  => 9001,
-			'МждМешокМАвиа'              => 9001,
-			'МждМешокМЗаказной'          => 9011,
-			'МждМешокМАвиаЗаказной'      => 9011,
-			'МждБандероль'               => 3001,
-			'МждБандерольАвиа'           => 3001,
-			'МждБандерольЗаказная'       => 3011,
-			'МждБандерольАвиаЗаказная'   => 3011,
-			'МждМелкийПакет'             => 5001,
-			'МждМелкийПакетАвиа'         => 5001,
-			'МждМелкийПакетЗаказной'     => 5011,
-			'МждМелкийПакетАвиаЗаказной' => 5011,
-			'МждПосылка'                 => 4021,
-			'МждПосылкаАвиа'             => 4021,
-			'EMS_МждДокументы'           => 7031,
-			'EMS_МждТовары'              => 7031,
+			'ПростаяБандероль' => 3000, 'ЗаказнаяБандероль' => 3010, 'ЗаказнаяБандероль1Класс' => 16010, 'ЦеннаяБандероль' => 3020, 'ЦеннаяБандероль1Класс' => 16020, 'ПростаяПосылка' => 27030, 'ЦеннаяПосылка' => 27020, 'Посылка1Класс' => 47020, 'EMS' => 7020, 'МждМешокМ' => 9001, 'МждМешокМАвиа' => 9001, 'МждМешокМЗаказной' => 9011, 'МждМешокМАвиаЗаказной' => 9011, 'МждБандероль' => 3001, 'МждБандерольАвиа' => 3001, 'МждБандерольЗаказная' => 3011, 'МждБандерольАвиаЗаказная' => 3011, 'МждМелкийПакет' => 5001, 'МждМелкийПакетАвиа' => 5001, 'МждМелкийПакетЗаказной' => 5011, 'МждМелкийПакетАвиаЗаказной' => 5011, 'МждПосылка' => 4021, 'МждПосылкаАвиа' => 4021, 'EMS_МждДокументы' => 7031, 'EMS_МждТовары' => 7031,
 		];
 
 		return isset( $old_types[ $old_value ] ) ? $old_types[ $old_value ] : false;

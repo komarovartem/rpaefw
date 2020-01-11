@@ -45,7 +45,8 @@ class RPAEFW {
 		add_filter( 'woocommerce_get_sections_shipping', [ $this, 'settings_page' ] );
 		add_filter( 'woocommerce_get_settings_shipping', [ $this, 'settings' ], 10, 2 );
 
-		add_action( 'woocommerce_checkout_update_order_review', [$this, 'switch_debug_on']);
+		add_action( 'woocommerce_checkout_update_order_review', [ $this, 'switch_debug_on' ] );
+		add_action( 'admin_footer', [ $this, 'admin_promo_notice' ] );
 	}
 
 	/**
@@ -285,10 +286,16 @@ class RPAEFW {
 				],
 				[
 					'title' => 'Регион-ИНН-Договор',
-					'desc'  => 'Укажите данные если вы используете методы предназначеные для корпоративных клиентов.  Договор, заключенный между корпоративным клиентом и ФГУП “Почта России”. Строка состоит из кода региона по Конституции РФ, ИНН предприятия и номера договора, разделенных знаком “-” (дефис).',
+					'desc'  => 'Укажите данные если вы используете методы предназначенные для корпоративных клиентов.  Договор, заключенный между корпоративным клиентом и ФГУП “Почта России”. Строка состоит из кода региона по Конституции РФ, ИНН предприятия и номера договора, разделенных знаком “-” (дефис).',
 					'type'  => 'text',
 					'id'    => 'rpaefw_dogovor'
 				],
+				[
+					'title' => 'ОПС обслуживания',
+					'desc'  => 'Индекс ОПС обслуживания. Если вы используете синхронизацию с личным кабинетом то индекс должен быть идентичен тому, что указан в <a href="https://otpravka.pochta.ru/settings#/service-settings" target="_blank">настройках сервиса личного кабинета</a>. <br>При условиях приема оплаты наложенным платежом и наличия синхронизации с личным кабинетом необходимо чтобы номер ЕСПП в настройках сервиса личного кабинета на сайте Почты РФ был заполнен.',
+					'type'  => 'number',
+					'id'    => 'rpaefw_ops_index'
+				]
 			];
 
 			$settings[] = [
@@ -347,12 +354,83 @@ class RPAEFW {
 
 	/**
 	 * Happens during AJAX on checkout update
-	 * This function helps recalculate shipping cost if COD is selected by skipping hash on calculate_shipping_for_package
+	 * This function helps recalculate shipping cost if COD is selected by skipping hash on
+	 * calculate_shipping_for_package
 	 */
 	public function switch_debug_on() {
 		add_filter( "option_woocommerce_shipping_debug_mode", function () {
 			return 'yes';
 		} );
+	}
+
+	public function admin_promo_notice() {
+		$instance_id = 0;
+		if ( isset( $_REQUEST[ 'instance_id' ] ) &&
+		     isset( $_REQUEST[ 'tab' ] ) && $_REQUEST[ 'tab' ] == 'shipping' &&
+		     isset( $_REQUEST[ 'page' ] ) && $_REQUEST[ 'page' ] == 'wc-settings'
+		) {
+			$instance_id = intval( $_REQUEST[ 'instance_id' ] );
+		}
+
+		if ( ! $instance_id || ! $options = get_option( 'woocommerce_rpaefw_post_calc_' . $instance_id . '_settings' ) ) {
+		    return;
+		}
+		
+		?>
+        <div class="rpaefw-promo">
+            <h3 class="wc-settings-sub-title">Russian Post PRO</h3>
+            <p>
+                ПРО дополнение добавляет поддержку методов отправления для <b>корпоративных клиентов</b> Почты РФ
+                включая Посылка Онлайн, Курьер Онлайн и ЕКОМ, а так же синхронизацию заказов с <b>личным кабинетом</b>
+                для автоматического заполнения всех необходимых бланков и создания партий для отправления.
+            </p>
+            А так же ПРО дополнение включает:
+            <ul class="ul-disc">
+                <li>
+                    База областей и городов РФ для простого поиска и выбора.
+                    <img src="<?php echo plugin_dir_url( __FILE__ ) . 'assets/img/state-city-select.png'; ?>" alt="">
+                </li>
+                <li>
+                    Поиск индекса по городу и области (индекс больше не являеся обязательным полем)
+                </li>
+                <li>
+                    Расчет стоимости и времени доставки с помощью личного кабинета, а не общедоступного сервиса.
+                </li>
+                <li>
+                    Отображение наименования доставки до непосредственого расчета
+                </li>
+                <li>
+                    Синхронизацию и отображение ПВЗ для ЕКОМ отправлений
+                    <img src="<?php echo plugin_dir_url( __FILE__ ) . 'assets/img/state-city-select.png'; ?>" alt="">
+                </li>
+                <li>
+                    Дополнительные опции для настройки и работы с классами доставки
+                </li>
+            </ul>
+        </div>
+
+        <style>
+            .rpaefw-promo {
+                position: absolute;
+                right: 20px;
+                z-index: 999;
+                top: 150px;
+                width: 300px;
+                border: 1px solid #7e8993;
+                background: #fff;
+                padding: 30px;
+                border-radius: 3px;
+            }
+
+            .rpaefw-promo img {
+                width: 100%;
+            }
+
+            #wpbody-content form > *:not(.woo-nav-tab-wrapper) {
+                max-width: calc(100% - 400px);
+            }
+        </style>
+		<?php
 	}
 }
 

@@ -105,17 +105,17 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'type'        => 'select',
 				'default'     => '10',
 				'options'     => array(
-					10 => 'Коробка «S» (10кг)',
-					11 => 'Пакет полиэтиленовый «S» (7кг)',
-					12 => 'Конверт с воздушно-пузырчатой пленкой «S» (2кг)',
-					20 => 'Коробка «М» (10кг)',
-					21 => 'Пакет полиэтиленовый «М»  (7кг)',
-					22 => 'Конверт с воздушно-пузырчатой пленкой «М» (2кг)',
-					30 => 'Коробка «L» (10кг)',
-					31 => 'Пакет полиэтиленовый «L»  (7кг)',
-					40 => 'Коробка «ХL» (10кг)',
-					41 => 'Пакет полиэтиленовый «ХL»  (7кг)',
-					99 => 'Нестандартная упаковка',
+					10 => 'Коробка «S» (макс. 10кг, до 260х170х80 мм)',
+					11 => 'Пакет полиэтиленовый «S» (макс. 7кг)',
+					12 => 'Конверт с воздушно-пузырчатой пленкой «S» (макс. 2кг)',
+					20 => 'Коробка «М» (макс. 10кг, до 300х200х150 мм)',
+					21 => 'Пакет полиэтиленовый «М»  (макс. 7кг)',
+					22 => 'Конверт с воздушно-пузырчатой пленкой «М» (макс. 2кг)',
+					30 => 'Коробка «L» (макс. 10кг, до 400х270х180 мм)',
+					31 => 'Пакет полиэтиленовый «L»  (макс. 7кг)',
+					40 => 'Коробка «ХL» (макс. 10кг, 530х260х220 мм)',
+					41 => 'Пакет полиэтиленовый «ХL»  (макс. 7кг)',
+					99 => 'Нестандартная упаковка (негабарит - сумма сторон не более 1400 мм, сторона не более 600 мм))',
 				)
 			),
 			'service'    => [
@@ -223,6 +223,19 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'options' => [
 					'taxable' => __( 'Taxable', 'russian-post-and-ems-for-woocommerce' ),
 					'none'    => _x( 'None', 'Tax status', 'russian-post-and-ems-for-woocommerce' ),
+				]
+			],
+			'nds'        => [
+				'title'       => __( 'VAT', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => RPAEFW::only_in_pro_ver_text() . __( 'Select how final shipping cost will be calculated with or without VAT rate', 'russian-post-and-ems-for-woocommerce' ),
+				'type'        => 'select',
+				'default'     => 'yes',
+				'custom_attributes' => [
+					RPAEFW::is_pro_active() ? '' : 'disabled' => ''
+				],
+				'options'     => [
+					'yes' => __( 'Include VAT in final shipping cost', 'russian-post-and-ems-for-woocommerce' ),
+					'no'  => _x( 'Without VAT', 'Tax status', 'russian-post-and-ems-for-woocommerce' ),
 				]
 			]
 		];
@@ -593,10 +606,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			'sumoc'     => $total_val,
 			'sumin'     => $total_val,
 			'sum_month' => $total_val,
-			'pack'      => $this->pack ? $this->pack : 10,
+			'pack'      => isset( $this->pack ) ? $this->pack : 10,
 			'isavia'    => isset( $this->isavia ) ? $this->isavia : 1,
 			'from'      => $from,
-			'object'    => $type
+			'object'    => $type,
+			'nds'       => isset( $this->nds ) ? $this->nds : 'yes'
 		);
 
 		// add COD as service if it is selected as payment method
@@ -649,8 +663,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			if ( isset( $shipping_cost[ 'delivery-time' ] ) ) {
 				$time_pro = $shipping_cost[ 'delivery-time' ][ 'max-days' ];
 			}
-
-			$shipping_cost = ( $shipping_cost[ 'total-rate' ] + $shipping_cost[ 'total-vat' ] ) / 100;
+			if ( $this->nds == 'no' ) {
+				$shipping_cost = $shipping_cost[ 'total-rate' ] / 100;
+			} else {
+				$shipping_cost = ( $shipping_cost[ 'total-rate' ] + $shipping_cost[ 'total-vat' ] ) / 100;
+			}
 		}
 
 		$shipping_class_cost = $this->get_shipping_class_cost( $package );
@@ -745,7 +762,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		$match_types = [
-			2000 => 2020, 11000 => 2020, 2010 => 2020, 11010 => 2020, 33010 => 2020, 2020 => 2020, 15000 => 15020, 15010 => 15020, 15020 => 15020, 3000 => 3020, 3010 => 3020, 3020 => 3020, 16010 => 3020, 16020 => 3020, 27030 => 27020, 27020 => 27020, 29030 => 29020, 29020 => 29020, 28030 => 28020, 28020 => 28020, 4030 => 4020, 4020 => 4020, 47030 => 47020, 47020 => 47020, 23030 => 23020, 23020 => 23020, 51030 => 51020, 51020 => 51020, 24030 => 24020, 24020 => 24020, 30030 => 30020, 30020 => 30020, 31030 => 31020, 31020 => 31020, 39000 => 39000, 40000 => 40000, 53030 => 53070, 53070 => 53070, 7030 => 7020, 7020 => 7020, 41030 => 41020, 41020 => 41020, 34030 => 34020, 34020 => 34020, 52030 => 52020, 52020 => 52020, 4031 => 4021, 4021 => 4021, 7031 => 7031, 5001 => 5001, 5011 => 5011, 3001 => 3001, 3011 => 3011, 9001 => 9001, 9011 => 9011,
+			2000 => 2020, 11000 => 2020, 2010 => 2020, 11010 => 2020, 33010 => 2020, 2020 => 2020, 15000 => 15020, 15010 => 15020, 15020 => 15020, 3000 => 3020, 3010 => 3020, 3020 => 3020, 16010 => 16020, 16020 => 16020, 27030 => 27020, 27020 => 27020, 29030 => 29020, 29020 => 29020, 28030 => 28020, 28020 => 28020, 4030 => 4020, 4020 => 4020, 47030 => 47020, 47020 => 47020, 23030 => 23020, 23020 => 23020, 51030 => 51020, 51020 => 51020, 24030 => 24020, 24020 => 24020, 30030 => 30020, 30020 => 30020, 31030 => 31020, 31020 => 31020, 39000 => 39000, 40000 => 40000, 53030 => 53070, 53070 => 53070, 7030 => 7020, 7020 => 7020, 41030 => 41020, 41020 => 41020, 34030 => 34020, 34020 => 34020, 52030 => 52020, 52020 => 52020, 4031 => 4021, 4021 => 4021, 7031 => 7031, 5001 => 5001, 5011 => 5011, 3001 => 3001, 3011 => 3011, 9001 => 9001, 9011 => 9011,
 		];
 
 		return isset( $match_types[ $type ] ) ? $match_types[ $type ] : $type;
@@ -758,6 +775,10 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * @return bool
 	 */
 	public function is_cod_used_as_payment() {
+		if ( ! RPAEFW::is_pro_active() ) {
+			return false;
+		}
+
 		if ( ! $chosen_payment_method = WC()->session->get( 'chosen_payment_method' ) ) {
 			return false;
 		}
@@ -1163,14 +1184,14 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 */
 	public function get_data_from_api( $request, $get, $base_params = [] ) {
 
-		if ( RPAEFW::is_pro_active() &&
-		     ( $get === 'price' ) &&
-		     get_option( 'rpaefw_token' ) &&
-		     class_exists( 'RPAEFW_PRO' ) &&
-		     class_exists( 'RPAEFW_PRO_Helper' ) ) {
-
-			return $this->get_data_from_pro_api( $base_params );
-		}
+//		if ( RPAEFW::is_pro_active() &&
+//		     ( $get === 'price' ) &&
+//		     get_option( 'rpaefw_token' ) &&
+//		     class_exists( 'RPAEFW_PRO' ) &&
+//		     class_exists( 'RPAEFW_PRO_Helper' ) ) {
+//
+//			return $this->get_data_from_pro_api( $base_params );
+//		}
 
 		$remote_response = wp_remote_get( $request, [ 'timeout' => 15 ] );
 		$this->log_it( __( 'Making request to get:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . $request );
@@ -1205,7 +1226,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 
 			if ( $get === 'price' ) {
-				return $response[ 'paynds' ] / 100;
+				if ( $this->nds == 'no' && RPAEFW::is_pro_active() ) {
+					return $response[ 'pay' ] / 100;
+				} else {
+					return $response[ 'paynds' ] / 100;
+				}
 			} else {
 				return $response[ 'delivery' ][ 'max' ];
 			}

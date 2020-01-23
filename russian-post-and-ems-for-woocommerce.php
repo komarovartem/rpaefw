@@ -9,7 +9,7 @@ License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Text Domain: russian-post-and-ems-for-woocommerce
 WC requires at least: 3.0.0
-WC tested up to: 3.8
+WC tested up to: 3.9
 */
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -274,7 +274,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'title'       => esc_html__( 'Delivery Time', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'checkbox',
 				'label'       => esc_html__( 'Show time of delivery.', 'russian-post-and-ems-for-woocommerce' ),
-				'description' => esc_html__( 'Displayed next to the title. Note, it does not work for international shipping. The time calculated via official Russian Post service.', 'russian-post-and-ems-for-woocommerce' ) . '<a href="https://delivery.pochta.ru/" target="_blank">delivery.pochta.ru</a>',
+				'description' => esc_html__( 'Displayed next to the title. Note, it does not work for international shipping and EKOM. The time calculated via official Russian Post service.', 'russian-post-and-ems-for-woocommerce' ) . '<a href="https://delivery.pochta.ru/" target="_blank">delivery.pochta.ru</a>',
 				'default'     => 'no',
 			),
 		];
@@ -449,7 +449,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$weight = $weight < 100 ? 100 : $weight;
 
 		// get total value
-		$total_val = intval( $package[ 'contents_cost' ] );
+		$total_val = intval( $package[ 'cart_subtotal' ] );
 
 		// additional cost
 		$addcost     = intval( $this->addcost );
@@ -625,6 +625,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		if ( $dogovor ) {
 			$base_params[ 'dogovor' ] = trim( $dogovor );
+			$services[] = 28; // corporate client
 		}
 
 		// check if shipping goes abroad
@@ -687,7 +688,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		// show delivery time
-		if ( $this->time === 'yes' && $country_code == 'RU' ) {
+		if ( $this->time === 'yes' && $country_code == 'RU' && ! in_array( $type, [ 53030, 53070 ] )  ) {
 			if ( ! $delivery_time = $time_pro ) {
 				$request = add_query_arg( array(
 					'from'   => $from,

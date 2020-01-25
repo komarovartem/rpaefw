@@ -39,7 +39,7 @@ class RPAEFW_Admin {
                 <li>
                     База областей и городов РФ для простого поиска и выбора.
                     <img src="<?php echo RPAEFW::plugin_dir_url() . 'assets/img/state-city-select.png'; ?>" style="max-width: 240px">
-                    <small>Включает 50+ тысяч адресов официального справочника Поты РФ</small>
+                    <small>Включает 50+ тысяч адресов официального справочника Почты РФ</small>
                 </li>
                 <li>
                     Автопоиск индекса для области/города
@@ -128,4 +128,4 @@ class RPAEFW_Admin {
 
 }
 
-new RPAEFW_Admin();
+//new RPAEFW_Admin();

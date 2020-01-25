@@ -225,14 +225,14 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				]
 			],
 			'nds'        => [
-				'title'       => __( 'VAT', 'russian-post-and-ems-for-woocommerce' ),
-				'description' => RPAEFW::only_in_pro_ver_text() . __( 'Select how final shipping cost will be calculated with or without VAT rate', 'russian-post-and-ems-for-woocommerce' ),
-				'type'        => 'select',
-				'default'     => 'yes',
+				'title'             => __( 'VAT', 'russian-post-and-ems-for-woocommerce' ),
+				'description'       => RPAEFW::only_in_pro_ver_text() . __( 'Select how final shipping cost will be calculated with or without VAT rate', 'russian-post-and-ems-for-woocommerce' ),
+				'type'              => 'select',
+				'default'           => 'yes',
 				'custom_attributes' => [
 					RPAEFW::is_pro_active() ? '' : 'disabled' => ''
 				],
-				'options'     => [
+				'options'           => [
 					'yes' => __( 'Include VAT in final shipping cost', 'russian-post-and-ems-for-woocommerce' ),
 					'no'  => _x( 'Without VAT', 'Tax status', 'russian-post-and-ems-for-woocommerce' ),
 				]
@@ -427,6 +427,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$ops_index    = get_option( 'rpaefw_ops_index' ) ? : get_option( 'woocommerce_store_postcode' );
 		$from         = $this->from ? $this->from : $ops_index;
 		$type         = $this->type;
+		$is_ekom      = $type == 53030;
 		$dogovor      = get_option( 'rpaefw_dogovor' );
 		$country_code = $package[ 'destination' ][ 'country' ] ? $package[ 'destination' ][ 'country' ] : 'RU';
 		$postal_code  = wc_format_postcode( $package[ 'destination' ][ 'postcode' ], $country_code );
@@ -491,7 +492,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		if ( $country_code == 'RU' ) {
 			if ( RPAEFW::is_pro_active() ) {
 				// if not ekom since it will be calculated later
-				if ( ! in_array( $type, [ 53030, 53070 ] ) ) {
+				if ( ! $is_ekom ) {
 					if ( ! $to = $this->get_index_based_on_address( $state, $city, $postal_code ) ) {
 						$to = $postal_code;
 					}
@@ -522,7 +523,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		// change postcode to EKOM index if it is selected
-		if ( in_array( $type, [ 53030, 53070 ] ) ) {
+		if ( $is_ekom ) {
 			// add 10 rub for sms which is required but not calculated for some reason
 			$addcost += 10;
 			if ( RPAEFW::is_pro_active() ) {
@@ -542,7 +543,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			5000  => array( 3000, 3010, 3020, 3001, 3011 ),
 			10000 => array( 27030, 27020, 29030, 29020, 28030, 28020, ),
 			14500 => array( 9001, 9011 ),
-			15000 => array( 53030, 53070 ),
+			15000 => array( 53030 ),
 			20000 => array( 23030, 23020, 51030, 51020, 34030, 34020, 4031, 4021 ),
 			31500 => array( 24030, 24020, 30030, 30020, 7030, 7020, 41030, 41020, 7031 ),
 			50000 => array( 4030, 4020 ),
@@ -624,7 +625,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		if ( $dogovor ) {
 			$base_params[ 'dogovor' ] = trim( $dogovor );
-			$services[] = 28; // corporate client
+			$services[]               = 28; // corporate client
 		}
 
 		// check if shipping goes abroad
@@ -687,7 +688,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		// show delivery time
-		if ( $this->time === 'yes' && $country_code == 'RU' && ! in_array( $type, [ 53030, 53070 ] )  ) {
+		if ( $this->time === 'yes' && $country_code == 'RU' && ! $is_ekom ) {
 			if ( ! $delivery_time = $time_pro ) {
 				$request = add_query_arg( array(
 					'from'   => $from,
@@ -700,15 +701,15 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				if ( ! $delivery_time = get_transient( $request_hash ) ) {
 					if ( $delivery_time = $this->get_data_from_api( $request, 'time' ) ) {
 						set_transient( $request_hash, $delivery_time, DAY_IN_SECONDS * 30 );
-
-						if ( isset( $this->add_time ) && $this->add_time ) {
-							$delivery_time += intval( $this->add_time );
-						}
 					}
 				}
 			}
 
 			if ( $delivery_time ) {
+				if ( isset( $this->add_time ) && $this->add_time ) {
+					$delivery_time += intval( $this->add_time );
+				}
+
 				$time = ' (' . sprintf( _n( '%s day', '%s days', $delivery_time, 'russian-post-and-ems-for-woocommerce' ), number_format_i18n( $delivery_time ) ) . ')';
 			}
 		}

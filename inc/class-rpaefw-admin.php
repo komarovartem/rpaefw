@@ -28,7 +28,7 @@ class RPAEFW_Admin {
 
 		?>
         <div class="rpaefw-promo">
-            <h3 class="wc-settings-sub-title">Russian Post PRO</h3>
+            <h3 class="wc-settings-sub-title">Почта России и EMS - PRO</h3>
             <p>
                 Поддержка отправлений для <b>корпоративных клиентов</b> Почты РФ
                 включая ЕКОМ, а так же синхронизацию заказов с <b>личным кабинетом</b>
@@ -53,7 +53,7 @@ class RPAEFW_Admin {
                            Почты РФ</small>
                 </li>
                 <li>
-                    Синхронизацию и отображение <b>ПВЗ для ЕКОМ отправлений</b>
+                    Синхронизация и отображение <b>ПВЗ для ЕКОМ отправлений</b>
                     <img src="<?php echo RPAEFW::plugin_dir_url() . 'assets/img/pvz-select.png'; ?>" alt="">
                     <small>Отображение ПВЗ пунктов в городе с возможностью выбора на карте</small>
                 </li>

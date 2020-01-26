@@ -3,7 +3,7 @@ Contributors: artemkomarov
 Tags: woocommerce, woocommerce shipping, ecommerce, shipping
 Requires at least: 4.4
 Tested up to: 5.3
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -49,7 +49,6 @@ The plugin by itself has no methods to calculate the shipping price. All data co
 
 = 1.2.9 =
 
-* Добавлен автоматический пересчет цен доставки при выборе наложенного платежа в качестве оплаты
 * Добавлены отправления вида: Письмо
 * Добавлен выбор вида отправления наземный или воздушный
 * Удалено поле EMS из email письма трекинга

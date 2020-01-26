@@ -100,7 +100,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			),
 			'pack'       => array(
 				'title'       => esc_html__( 'Package Type', 'russian-post-and-ems-for-woocommerce' ),
-				'description' => esc_html__( 'Only for shipping types: Посылка (стандарт, экспресс, курьер EMS) package is required. Note there are weight limitations for packages (in brackets displayed the max allowed weight).', 'russian-post-and-ems-for-woocommerce' ),
+				'description' => esc_html__( 'Only for shipping types: Посылка (стандарт, экспресс, курьер EMS) and EKOM package is required. Note there are weight limitations for packages (in brackets displayed the max allowed weight).', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'select',
 				'default'     => '10',
 				'options'     => array(
@@ -317,7 +317,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'type'        => 'checkbox',
 				'disabled'    => true,
 				'label'       => 'Отображать метод до того как введен адрес доставки',
-				'description' => 'Доступно только в PRO версии. <br>По умолчанию метод будет отображаться только после того как произойдет расчет доставки на основе введеного адреса',
+				'description' => 'Доступно только в PRO версии. <br>По умолчанию метод будет отображаться только после того как произойдет расчет доставки на основе введённого адреса',
 				'default'     => 'no',
 			];
 

@@ -630,7 +630,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		// check if shipping goes abroad
 		if ( $country_code != 'RU' ) {
-			if ( ! in_array( $type, array( 4031, 4021, 7031, 5001, 5011, 9001, 9011 ) ) ) {
+			if ( ! in_array( $type, array( 4031, 4021, 7031, 5001, 5011, 9001, 9011, 3001, 3011 ) ) ) {
 				$this->maybe_print_error( __( 'For international shipping you should select international type in settings.', 'russian-post-and-ems-for-woocommerce' ) );
 
 				return;
@@ -676,7 +676,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		// shipping cost + packages cost + additional cost
 		$cost = ceil( $shipping_cost + $addcost + $addpackcost + $shipping_class_cost );
 
-		if ( $currency != 'RUB' ) {
+		if ( 'RUB' !== $currency ) {
 			$cost = $this->get_currency_value( $currency, $cost );
 		}
 

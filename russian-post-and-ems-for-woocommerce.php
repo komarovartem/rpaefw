@@ -19,29 +19,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RPAEFW {
 	public function __construct() {
 		// apply plugin textdomain
-		add_action( 'plugins_loaded', [ $this, 'load_textdomain' ] );
+		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 
 		// add new order status
-		add_action( 'init', [ $this, 'register_order_confirmed_order_status' ] );
-		add_filter( 'wc_order_statuses', [ $this, 'add_order_confirmed_to_order_statuses' ], 10, 1 );
+		add_action( 'init', array( $this, 'register_order_confirmed_order_status' ) );
+		add_filter( 'wc_order_statuses', array( $this, 'add_order_confirmed_to_order_statuses' ), 10, 1 );
 
 		// add email template for tracking code
-		add_filter( 'woocommerce_email_classes', [ $this, 'expedited_woocommerce_email' ] );
-		add_filter( 'woocommerce_email_actions', [ $this, 'woocommerce_email_add_actions' ] );
+		add_filter( 'woocommerce_email_classes', array( $this, 'expedited_woocommerce_email' ) );
+		add_filter( 'woocommerce_email_actions', array( $this, 'woocommerce_email_add_actions' ) );
 
 		// tracking code meta box and email sending
-		add_action( 'add_meta_boxes', [ $this, 'add_meta_tracking_code_box' ], 10, 2 );
-		add_action( 'woocommerce_process_shop_order_meta', [ $this, 'save_tracking_code' ], 0, 2 );
+		add_action( 'add_meta_boxes', array( $this, 'add_meta_tracking_code_box' ), 10, 2 );
+		add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_tracking_code' ), 0, 2 );
 
 		// add new shipping method
-		add_action( 'woocommerce_shipping_init', [ $this, 'init_method' ] );
-		add_filter( 'woocommerce_shipping_methods', [ $this, 'register_method' ] );
+		add_action( 'woocommerce_shipping_init', array( $this, 'init_method' ) );
+		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_method' ) );
 
 		// validate postcode for Russia
-		add_filter( 'woocommerce_validate_postcode', [ $this, 'validate_postcode' ], 10, 3 );
+		add_filter( 'woocommerce_validate_postcode', array( $this, 'validate_postcode' ), 10, 3 );
 
-		add_filter( 'woocommerce_get_sections_shipping', [ $this, 'settings_page' ] );
-		add_filter( 'woocommerce_get_settings_shipping', [ $this, 'settings' ], 10, 2 );
+		add_filter( 'woocommerce_get_sections_shipping', array( $this, 'settings_page' ) );
+		add_filter( 'woocommerce_get_settings_shipping', array( $this, 'settings' ), 10, 2 );
 
 		$this->init();
 	}
@@ -57,14 +57,17 @@ class RPAEFW {
 	 * Register new status
 	 */
 	public function register_order_confirmed_order_status() {
-		register_post_status( 'wc-delivering', array(
-			'label'                     => esc_html__( 'Delivering', 'russian-post-and-ems-for-woocommerce' ),
-			'public'                    => true,
-			'exclude_from_search'       => false,
-			'show_in_admin_all_list'    => true,
-			'show_in_admin_status_list' => true,
-			'label_count'               => false
-		) );
+		register_post_status(
+			'wc-delivering',
+			array(
+				'label'                     => esc_html__( 'Delivering', 'russian-post-and-ems-for-woocommerce' ),
+				'public'                    => true,
+				'exclude_from_search'       => false,
+				'show_in_admin_all_list'    => true,
+				'show_in_admin_status_list' => true,
+				'label_count'               => false,
+			)
+		);
 	}
 
 	/**
@@ -80,7 +83,7 @@ class RPAEFW {
 		foreach ( $order_statuses as $key => $status ) {
 			$new_order_statuses[ $key ] = $status;
 			if ( 'wc-processing' === $key ) {
-				$new_order_statuses[ 'wc-delivering' ] = esc_html__( 'Delivering', 'russian-post-and-ems-for-woocommerce' );
+				$new_order_statuses['wc-delivering'] = esc_html__( 'Delivering', 'russian-post-and-ems-for-woocommerce' );
 			}
 		}
 
@@ -96,7 +99,7 @@ class RPAEFW {
 	 */
 	public function expedited_woocommerce_email( $email_classes ) {
 		if ( ! class_exists( 'RPAEFW_Tracking_Code' ) ) {
-			$email_classes[ 'RPAEFW_Tracking_Code' ] = include_once( dirname( __FILE__ ) . '/inc/class-rpaefw-tracking-code.php' );
+			$email_classes['RPAEFW_Tracking_Code'] = include_once( dirname( __FILE__ ) . '/inc/class-rpaefw-tracking-code.php' );
 		}
 
 		return $email_classes;
@@ -122,7 +125,7 @@ class RPAEFW {
 	 * @param $post
 	 */
 	function add_meta_tracking_code_box( $post_type, $post ) {
-		if ( $post_type != 'shop_order' ) {
+		if ( 'shop_order' !== $post_type ) {
 			return;
 		}
 
@@ -130,7 +133,7 @@ class RPAEFW {
 		$method_id = 0;
 
 		foreach ( $order->get_shipping_methods() as $shipping ) {
-			if ( $shipping->get_method_id() == 'rpaefw_post_calc' ) {
+			if ( in_array( $shipping->get_method_id(), array( 'rpaefw_post_calc', 'free_shipping' ), true ) ) {
 				$method_id = $shipping->get_instance_id();
 			}
 		}
@@ -140,10 +143,17 @@ class RPAEFW {
 			return;
 		}
 
-		add_meta_box( 'rpaefw_meta_tracking_code', esc_html__( 'Tracking Code', 'russian-post-and-ems-for-woocommerce' ), array(
-			$this,
-			'tracking_code_meta_box'
-		), 'shop_order', 'side', 'default' );
+		add_meta_box(
+			'rpaefw_meta_tracking_code',
+			esc_html__( 'Tracking Code', 'russian-post-and-ems-for-woocommerce' ),
+			array(
+				$this,
+				'tracking_code_meta_box',
+			),
+			'shop_order',
+			'side',
+			'default'
+		);
 	}
 
 	/**
@@ -166,12 +176,12 @@ class RPAEFW {
 	 *
 	 */
 	function save_tracking_code( $post_id ) {
-		if ( isset( $_POST[ 'save' ] ) && $_POST[ 'save' ] != esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) ) {
+		if ( isset( $_POST['save'] ) && $_POST['save'] != esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) ) {
 			return;
 		}
 
-		if ( $_POST[ 'rpaefw_postcode_tracking_provider' ] != '' || $_POST[ 'rpaefw_ems_tracking_provider' ] != '' ) {
-			$post_tracking_number = sanitize_text_field( $_POST[ 'rpaefw_postcode_tracking_provider' ] );
+		if ( $_POST['rpaefw_postcode_tracking_provider'] != '' || $_POST['rpaefw_ems_tracking_provider'] != '' ) {
+			$post_tracking_number = sanitize_text_field( $_POST['rpaefw_postcode_tracking_provider'] );
 
 			update_post_meta( $post_id, '_post_tracking_number', $post_tracking_number );
 
@@ -182,19 +192,26 @@ class RPAEFW {
 			$comment_type       = 'order_note';
 			$comment_parent     = 0;
 			$comment_approved   = 1;
-			$commentdata        = apply_filters( 'woocommerce_new_order_note_data', compact( 'comment_post_ID', 'comment_author_url', 'comment_content', 'comment_agent', 'comment_type', 'comment_parent', 'comment_approved' ), array(
-				'order_id'         => $post_id,
-				'is_customer_note' => 0
-			) );
+			$commentdata        = apply_filters(
+				'woocommerce_new_order_note_data',
+				compact( 'comment_post_ID', 'comment_author_url', 'comment_content', 'comment_agent', 'comment_type', 'comment_parent', 'comment_approved' ),
+				array(
+					'order_id'         => $post_id,
+					'is_customer_note' => 0,
+				)
+			);
 
 			wp_insert_comment( $commentdata );
 
 			WC()->mailer();
 
-			do_action( 'rpaefw_tracking_code_send', array(
-				'order_id'      => $post_id,
-				'customer_note' => $post_tracking_number,
-			) );
+			do_action(
+				'rpaefw_tracking_code_send',
+				array(
+					'order_id'      => $post_id,
+					'customer_note' => $post_tracking_number,
+				)
+			);
 		}
 	}
 
@@ -216,7 +233,7 @@ class RPAEFW {
 	 *
 	 */
 	function register_method( $methods ) {
-		$methods[ 'rpaefw_post_calc' ] = 'RPAEFW_Shipping_Method';
+		$methods['rpaefw_post_calc'] = 'RPAEFW_Shipping_Method';
 
 		return $methods;
 	}
@@ -248,7 +265,7 @@ class RPAEFW {
 	 * @return mixed
 	 */
 	public function settings_page( $sections ) {
-		$sections[ 'rpaefw' ] = esc_html__( 'Russian Post', 'russian-post-and-ems-for-woocommerce' );
+		$sections['rpaefw'] = esc_html__( 'Russian Post', 'russian-post-and-ems-for-woocommerce' );
 
 		return $sections;
 	}
@@ -263,45 +280,45 @@ class RPAEFW {
 	 */
 	public function settings( $settings, $current_section ) {
 		if ( $current_section == 'rpaefw' ) {
-			$settings = [
-				[
+			$settings = array(
+				array(
 					'title' => __( 'Russian Post', 'russian-post-and-ems-for-woocommerce' ),
 					'type'  => 'title',
-					'id'    => 'rpaefw_shipping_options'
-				],
-				[
+					'id'    => 'rpaefw_shipping_options',
+				),
+				array(
 					'title' => __( 'Region-TIN-Agreement', 'russian-post-and-ems-for-woocommerce' ),
 					'desc'  => __( 'Provide data if you use methods intended for corporate clients. An agreement concluded between a corporate client and Russian Post. The line consists of the region code according to the Constitution of the Russian Federation, the TIN of the enterprise and the agreement number, separated by a “-” sign (hyphen).', 'russian-post-and-ems-for-woocommerce' ),
 					'type'  => 'text',
-					'id'    => 'rpaefw_dogovor'
-				],
-				[
+					'id'    => 'rpaefw_dogovor',
+				),
+				array(
 					'title' => __( 'OPS Service', 'russian-post-and-ems-for-woocommerce' ),
-					'desc'  => sprintf(__( 'OPS service index. If you use synchronization with your dashboard, then the index should be identical to that specified in %sthe settings of your account.%s Under the conditions for receiving cash on delivery and the presence of synchronization with your Russian Post dashboard, it is necessary to set the UTP number in the settings of the account on the Russian Post website.', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/settings#/service-settings" target="_blank">', '</a><br>'),
+					'desc'  => sprintf( __( 'OPS service index. If you use synchronization with your dashboard, then the index should be identical to that specified in %1$sthe settings of your account.%2$s Under the conditions for receiving cash on delivery and the presence of synchronization with your Russian Post dashboard, it is necessary to set the UTP number in the settings of the account on the Russian Post website.', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/settings#/service-settings" target="_blank">', '</a><br>' ),
 					'type'  => 'number',
-					'id'    => 'rpaefw_ops_index'
-				]
-			];
+					'id'    => 'rpaefw_ops_index',
+				),
+			);
 
-			$settings[] = [
+			$settings[] = array(
 				'title'             => __( 'Application Authorization Token', 'russian-post-and-ems-for-woocommerce' ),
-				'desc'              => $this->only_in_pro_ver_text() . sprintf(__( 'To integrate with the API of the Russian Post Online Service. Token can be found in the %ssettings of your account%s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">', '</a>'),
+				'desc'              => $this->only_in_pro_ver_text() . sprintf( __( 'To integrate with the API of the Russian Post Online Service. Token can be found in the %1$ssettings of your account%2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">', '</a>' ),
 				'type'              => 'text',
 				'id'                => 'rpaefw_token',
-				'custom_attributes' => [
-					$this->is_pro_active() ? '' : 'disabled' => ''
-				]
-			];
+				'custom_attributes' => array(
+					$this->is_pro_active() ? '' : 'disabled' => '',
+				),
+			);
 
-			$settings[] = [
+			$settings[] = array(
 				'title'             => __( 'User Authorization Key', 'russian-post-and-ems-for-woocommerce' ),
-				'desc'              => $this->only_in_pro_ver_text() . sprintf(__( 'To integrate with the API of the Russian Post Online Service. You can generate an authorization key %shere%s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">', '</a>'),
+				'desc'              => $this->only_in_pro_ver_text() . sprintf( __( 'To integrate with the API of the Russian Post Online Service. You can generate an authorization key %1$shere%2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">', '</a>' ),
 				'type'              => 'text',
 				'id'                => 'rpaefw_key',
-				'custom_attributes' => [
-					$this->is_pro_active() ? '' : 'disabled' => ''
-				]
-			];
+				'custom_attributes' => array(
+					$this->is_pro_active() ? '' : 'disabled' => '',
+				),
+			);
 
 			$settings = apply_filters( 'rpaefw_settings', $settings );
 
@@ -338,13 +355,13 @@ class RPAEFW {
 	}
 
 	/**
-     * Plugin dir url helper
-     *
+	 * Plugin dir url helper
+	 *
 	 * @return string
 	 */
 	public static function plugin_dir_url() {
-	    return plugin_dir_url( __FILE__ );
-    }
+		return plugin_dir_url( __FILE__ );
+	}
 
 	/**
 	 * Add plugin partials

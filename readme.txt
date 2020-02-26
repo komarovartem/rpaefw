@@ -20,9 +20,20 @@ The plugin allows you to automatically calculate shipping costs of "Russian Post
 
 It is also possible to specify an additional fixed cost.
 
-= Attention! = 
+= PRO extension  =
 
-To calculate the COD there is a separate [plugin](https://ru.wordpress.org/plugins/cash-on-delivery-of-russian-post-or-ems-for-woocommerce/) which adds the appropriate method of payment in WooCommerce
+Special shipping methods and options for corporate clients of the Russian Post, with real-time shipping rates and dashboard synchronization. Special EKOM method which is synchronized with the official Russian Post database let your clients choose delivery points based on their address.
+
+Moreover, the extension adds useful functionality which helps your clients to choose shipping methods more easily.
+
+* Include database with all Russian regions and cities
+* Automatically select postcode based on client address
+* Normalize client address, avoiding mistypes and not existing addresses
+* Recalculate shipping cost based on COD payment method selection
+* Additional options for shipping classes and shipping method adjustments
+
+PRO extension can be purchased on the [official WooCommerce marketplace](https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/)
+
 
 == Installation ==
 
@@ -46,6 +57,11 @@ The plugin by itself has no methods to calculate the shipping price. All data co
 1. Основные настройки
 
 == Changelog ==
+
+= 1.3.0 =
+
+* Добавлено отображение трек кода для бесплатной доставки
+* Добавлена синхронизация с PRO дополнением
 
 = 1.2.9 =
 

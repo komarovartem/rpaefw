@@ -15,11 +15,11 @@ class RPAEFW_Admin {
 		}
 
 		$instance_id = 0;
-		if ( isset( $_REQUEST[ 'instance_id' ] ) &&
-		     isset( $_REQUEST[ 'tab' ] ) && $_REQUEST[ 'tab' ] == 'shipping' &&
-		     isset( $_REQUEST[ 'page' ] ) && $_REQUEST[ 'page' ] == 'wc-settings'
+		if ( isset( $_REQUEST['instance_id'] ) &&
+		     isset( $_REQUEST['tab'] ) && $_REQUEST['tab'] == 'shipping' &&
+		     isset( $_REQUEST['page'] ) && $_REQUEST['page'] == 'wc-settings'
 		) {
-			$instance_id = intval( $_REQUEST[ 'instance_id' ] );
+			$instance_id = intval( $_REQUEST['instance_id'] );
 		}
 
 		if ( ! $instance_id ) {
@@ -38,7 +38,8 @@ class RPAEFW_Admin {
             <ul class="ul-disc">
                 <li>
                     База областей и городов РФ для простого поиска и выбора.
-                    <img src="<?php echo RPAEFW::plugin_dir_url() . 'assets/img/state-city-select.png'; ?>" style="max-width: 240px">
+                    <img src="<?php echo RPAEFW::plugin_dir_url() . 'assets/img/state-city-select.png'; ?>"
+                         style="max-width: 240px">
                     <small>Включает 50+ тысяч адресов официального справочника Почты РФ</small>
                 </li>
                 <li>
@@ -48,19 +49,21 @@ class RPAEFW_Admin {
                 <li>
                     Автоматический пересчет доставки на основе выбора наложенного платежа.
 
-                    <small>если используется обычная посылка, но покупатель выбрал наложенный платеж как оплату, доставка
-                           пересчитается с объявленной стоимостью и включенной услугой COD в соответствии с тарифами
-                           Почты РФ</small>
+                    <small>если используется обычная посылка, но покупатель выбрал наложенный платеж как оплату,
+                        доставка
+                        пересчитается с объявленной стоимостью и включенной услугой COD в соответствии с тарифами
+                        Почты РФ</small>
                 </li>
                 <li>
                     Синхронизация и отображение <b>ПВЗ для ЕКОМ отправлений</b>
                     <img src="<?php echo RPAEFW::plugin_dir_url() . 'assets/img/pvz-select.png'; ?>" alt="">
-                    <small>Отображение ПВЗ пунктов в городе с возможностью выбора на карте</small>
+                    <small>Отображение пунктов выдачи заказа в городе покупателя с возможностью выбора на карте</small>
                 </li>
 
                 <li>
                     Синхронизация заказов с личным кабинетом в один клик
-                    <img src="<?php echo RPAEFW::plugin_dir_url() . 'assets/img/otpravka.png'; ?>" style="max-width: 200px">
+                    <img src="<?php echo RPAEFW::plugin_dir_url() . 'assets/img/otpravka.png'; ?>"
+                         style="max-width: 200px">
                     <small>Автоматическое заполнение полей при создании отправлений</small>
                 </li>
 
@@ -77,10 +80,11 @@ class RPAEFW_Admin {
                 <br>
                 <br>
                 <a href="https://yumecommerce.com/pochta/" target="_blank" class="button-primary">Посмотреть демо</a>
-                <a href="" class="button">Купить</a>
+                <a href="https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/" target="_blank"
+                   class="button">Купить</a>
                 <br>
                 <small style="margin-top: 10px">
-                    Для использования функций личного кабинета требуется активный договор с АО «Почта России» для
+                    Для использования функций личного кабинета и ЕКОМ требуется активный договор с АО «Почта России» для
                     интернет-магазинов.
                 </small>
             </ul>
@@ -128,4 +132,4 @@ class RPAEFW_Admin {
 
 }
 
-//new RPAEFW_Admin();
+new RPAEFW_Admin();

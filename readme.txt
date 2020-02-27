@@ -3,7 +3,7 @@ Contributors: artemkomarov
 Tags: woocommerce, woocommerce shipping, ecommerce, shipping
 Requires at least: 4.4
 Tested up to: 5.3
-Stable tag: 1.2.9
+Stable tag: 1.3.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -32,7 +32,7 @@ Moreover, the extension adds useful functionality which helps your clients to ch
 * Recalculate shipping cost based on COD payment method selection
 * Additional options for shipping classes and shipping method adjustments
 
-PRO extension can be purchased on the [official WooCommerce marketplace](https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/)
+[Demo website](https://yumecommerce.com/pochta/). PRO extension can be purchased on the [official WooCommerce marketplace](https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/)
 
 
 == Installation ==

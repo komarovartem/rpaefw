@@ -37,9 +37,6 @@ class RPAEFW {
 		add_action( 'woocommerce_shipping_init', array( $this, 'init_method' ) );
 		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_method' ) );
 
-		// validate postcode for Russia
-		add_filter( 'woocommerce_validate_postcode', array( $this, 'validate_postcode' ), 10, 3 );
-
 		add_filter( 'woocommerce_get_sections_shipping', array( $this, 'settings_page' ) );
 		add_filter( 'woocommerce_get_settings_shipping', array( $this, 'settings' ), 10, 2 );
 
@@ -238,25 +235,6 @@ class RPAEFW {
 		return $methods;
 	}
 
-
-	/**
-	 * Check if postcode is valid for Russia
-	 *
-	 * @param $valid
-	 * @param $postcode
-	 * @param $country
-	 *
-	 * @return bool
-	 *
-	 */
-	function validate_postcode( $valid, $postcode, $country ) {
-		if ( $country == 'RU' ) {
-			$valid = (bool) preg_match( '/^([0-9]{6})$/i', $postcode );
-		}
-
-		return $valid;
-	}
-
 	/**
 	 * Register settings page
 	 *
@@ -315,25 +293,6 @@ class RPAEFW {
 				'desc'              => $this->only_in_pro_ver_text() . sprintf( __( 'To integrate with the API of the Russian Post Online Service. You can generate an authorization key %1$shere%2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">', '</a>' ),
 				'type'              => 'text',
 				'id'                => 'rpaefw_key',
-				'custom_attributes' => array(
-					$this->is_pro_active() ? '' : 'disabled' => '',
-				),
-			);
-
-			$settings[] = array(
-				'title'             => __( 'Optional. Second Application Authorization Credentials', 'russian-post-and-ems-for-woocommerce' ),
-				'desc'              => __( 'Application Authorization Token', 'russian-post-and-ems-for-woocommerce' ),
-				'type'              => 'text',
-				'id'                => 'rpaefw_token_2',
-				'custom_attributes' => array(
-					$this->is_pro_active() ? '' : 'disabled' => '',
-				),
-			);
-
-			$settings[] = array(
-				'desc'              => __( 'User Authorization Key', 'russian-post-and-ems-for-woocommerce' ),
-				'type'              => 'text',
-				'id'                => 'rpaefw_key_2',
 				'custom_attributes' => array(
 					$this->is_pro_active() ? '' : 'disabled' => '',
 				),

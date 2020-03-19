@@ -320,6 +320,25 @@ class RPAEFW {
 				),
 			);
 
+			$settings[] = array(
+				'title'             => __( 'Optional. Second Application Authorization Credentials', 'russian-post-and-ems-for-woocommerce' ),
+				'desc'              => __( 'Application Authorization Token', 'russian-post-and-ems-for-woocommerce' ),
+				'type'              => 'text',
+				'id'                => 'rpaefw_token_2',
+				'custom_attributes' => array(
+					$this->is_pro_active() ? '' : 'disabled' => '',
+				),
+			);
+
+			$settings[] = array(
+				'desc'              => __( 'User Authorization Key', 'russian-post-and-ems-for-woocommerce' ),
+				'type'              => 'text',
+				'id'                => 'rpaefw_key_2',
+				'custom_attributes' => array(
+					$this->is_pro_active() ? '' : 'disabled' => '',
+				),
+			);
+
 			$settings = apply_filters( 'rpaefw_settings', $settings );
 
 			$settings[] = array(

@@ -16,11 +16,12 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		);
 
 		$important_message = '';
+
 		if ( ! RPAEFW::is_pro_active() ) {
 			$important_message = '<br><br><span style="color: red">Пожалуйста, обратите внимание,</span><span style="color: #007cba"> что расчет доставки происходит только от индекса отправителя до индекса получателя. Убедитесь, что в вашем магазине поле индекс при оформлении заказа не отключено и является обязательным для заполнения, иначе расчет будет невозможно произвести.</span>';
 		}
 
-		$settings_basic      = array(
+		$settings_basic = array(
 			'basic'      => array(
 				'title' => esc_html__( 'Basic Settings', 'russian-post-and-ems-for-woocommerce' ),
 				'type'  => 'title',
@@ -86,9 +87,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					7020  => 'EMS с объявленной ценностью (31.5кг)',
 					41030 => 'EMS РТ (31.5кг)',
 					41020 => 'EMS РТ с объявленной ценностью (31.5кг)',
-					//                  currently no PVZ lists are available
-					//                  34030 => 'EMS оптимальное (20кг)',
-					//                  34020 => 'EMS оптимальное с объявленной ценностью (20кг)',
+					// currently no PVZ lists are available
+					// 34030 => 'EMS оптимальное (20кг)',
+					// 34020 => 'EMS оптимальное с объявленной ценностью (20кг)',
 					52030 => 'EMS Тендер обыкновенное ',
 					52020 => 'EMS Тендер с объявленной ценностью',
 					4031  => 'Международные отправления. Посылка обыкновенная (20кг)',
@@ -98,9 +99,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					5011  => 'Международные отправления. Мелкий пакет заказной (2кг)',
 					3001  => 'Международные отправления. Бандероль простая (5кг)',
 					3011  => 'Международные отправления. Бандероль заказная (5кг)',
-					//                  hide it no matching type for https://otpravka.pochta.ru/specification#/enums-base-mail-type
-					//                  9001  => 'Международные отправления. Мешок М простой  (14.5кг)',
-					//                  9011  => 'Международные отправления. Мешок М заказной  (14.5кг)',
+					// hide it no matching type for https://otpravka.pochta.ru/specification#/enums-base-mail-type
+					// 9001  => 'Международные отправления. Мешок М простой  (14.5кг)',
+					// 9011  => 'Международные отправления. Мешок М заказной  (14.5кг)',
 				),
 			),
 			'pack'       => array(
@@ -243,6 +244,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				),
 			),
 		);
+
 		$settings_additional = array(
 			'add_settings'   => array(
 				'title' => esc_html__( 'Additional Settings', 'russian-post-and-ems-for-woocommerce' ),
@@ -261,7 +263,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'custom_attributes' => array( 'min' => 1 ),
 			),
 
-			// packaging
+			// packaging.
 			'addpackweight'  => array(
 				'title'       => esc_html__( 'Packaging', 'russian-post-and-ems-for-woocommerce' ),
 				'description' => esc_html__( 'Weight of the one packaging in grams. This weight will be added to the total weight of the order.', 'russian-post-and-ems-for-woocommerce' ),
@@ -273,8 +275,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'type'        => 'number',
 				'default'     => 0,
 			),
-
-			'time' => array(
+			'time'           => array(
 				'title'       => esc_html__( 'Delivery Time', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'checkbox',
 				'label'       => esc_html__( 'Show time of delivery.', 'russian-post-and-ems-for-woocommerce' ),
@@ -395,7 +396,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Print human error only for admin to easy debug errors
 	 *
-	 * @param string $message
+	 * @param string $message error message.
 	 */
 	public function maybe_print_error( $message = '' ) {
 		if ( ! current_user_can( 'administrator' ) ) {
@@ -414,8 +415,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Log some data using WC logger
 	 *
-	 * @param $message
-	 * @param string $type
+	 * @param string $message error message.
+	 * @param string $type error type.
 	 */
 	public function log_it( $message, $type = 'info' ) {
 		$logger = wc_get_logger();
@@ -423,16 +424,16 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
-	 * calculate_shipping function.
+	 * Calculate_shipping function.
 	 *
-	 * @param array $package (default: array())
+	 * @param array $package (default: array()).
 	 */
 	public function calculate_shipping( $package = array() ) {
 		global $woocommerce;
 
 		$type = $this->type;
 
-		// old version plugin types support
+		// old version plugin types support.
 		if ( $type && ! is_numeric( $type ) ) {
 			$new_type = $this->get_new_id_shipping_type( $type );
 
@@ -441,7 +442,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			$type = intval( $type );
 		}
 
-		$ops_index    = get_option( 'rpaefw_ops_index' ) ?: get_option( 'woocommerce_store_postcode' );
+		$ops_index    = get_option( 'rpaefw_ops_index' ) ? get_option( 'rpaefw_ops_index' ) : get_option( 'woocommerce_store_postcode' );
 		$from         = $this->from ? $this->from : $ops_index;
 		$is_ekom      = 53030 === $type;
 		$dogovor      = get_option( 'rpaefw_dogovor' );
@@ -452,36 +453,36 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$services     = ( isset( $this->service ) && ! empty( $this->service ) ) ? $this->service : array();
 		$to           = '';
 		$time         = '';
-		$time_pro     = ''; // store time here in case PRO
+		$time_pro     = ''; // store time here in case PRO.
 
-		// get weight of the cart
-		// normalise weights, unify to g
+		// get weight of the cart.
+		// normalise weights, unify to g.
 		$weight = ceil( wc_get_weight( $woocommerce->cart->cart_contents_weight, 'g' ) );
 
-		// plus pack weight
+		// plus pack weight.
 		$weight += intval( $this->addpackweight );
 
-		// check weight and set minimum value for Russian Post if it is less than required
+		// check weight and set minimum value for Russian Post if it is less than required.
 		$weight = $weight < 100 ? 100 : $weight;
 
-		// get total value
+		// get total value.
 		$total_val = intval( $package['cart_subtotal'] );
 
-		// additional cost
+		// additional cost.
 		$addcost     = intval( $this->addcost );
 		$addpackcost = intval( $this->addpackcost );
 
-		// check if default currency is different from RUB
+		// check if default currency is different from RUB.
 		$currency = $this->get_store_currency();
 
-		// origin postcode must be set
+		// origin postcode must be set.
 		if ( ! $from ) {
 			$this->maybe_print_error( __( 'Post code of sender is required. You can set in store address.', 'russian-post-and-ems-for-woocommerce' ) );
 
 			return;
 		}
 
-		// force display method before initial calculation
+		// force display method before initial calculation.
 		if ( isset( $this->force_display ) && $this->force_display === 'yes' && ! $postal_code && ! $city ) {
 			$this->add_rate(
 				array(
@@ -496,13 +497,13 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			return;
 		}
 
-		// change type if COD is selected
+		// change type if COD is selected.
 		$type = $this->match_shipping_type_based_on_payment( $type );
 
-		// if postal code is empty take city
+		// if postal code is empty take city.
 		if ( 'RU' === $country_code ) {
 			if ( RPAEFW::is_pro_active() ) {
-				// if not ekom since it will be calculated later
+				// if not ekom since it will be calculated later.
 				if ( ! $is_ekom ) {
 					$to = $this->get_index_based_on_address( $state, $city );
 					$to = $to ? $to : $postal_code;
@@ -512,9 +513,10 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 		}
 
-		// change postcode to EKOM index if it is selected
+		// change postcode to EKOM index if it is selected.
 		if ( $is_ekom ) {
-			// add 10 rub for sms which is required but not calculated for some reason
+			// add SMS service which is required but not calculated for some reason via tariff website.
+			$services[] = 44;
 			if ( RPAEFW::is_pro_active() ) {
 				$to = intval( $this->get_ekom_index( $state, $city, $type, $services ) );
 				if ( ! $to ) {
@@ -525,7 +527,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 		}
 
-		// check and avoid package overweight before make api request
+		// check and avoid package overweight before make api request.
 		$is_overweight = false;
 		$weight_ranges = array(
 			2000  => array( 5001, 5011 ),
@@ -546,7 +548,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 		}
 
-		// check conditional weights
+		// check conditional weights.
 		if ( ( $this->cond_min_weight && $weight < intval( $this->cond_min_weight ) ) || ( $this->cond_max_weight && $weight > intval( $this->cond_max_weight ) ) ) {
 			return;
 		}
@@ -557,7 +559,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			return;
 		}
 
-		// remove method if order has item with specific shipping class
+		// remove method if order has item with specific shipping class.
 		if ( isset( $this->cond_has_shipping_class ) && $this->cond_has_shipping_class ) {
 			$found_shipping_classes  = $this->find_shipping_classes( $package );
 			$is_shipping_class_found = false;
@@ -574,18 +576,18 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 		}
 
-		// if cost is less than provided in options
+		// if cost is less than provided in options.
 		if ( $this->fixedvalue_disable != '' && intval( $this->fixedvalue_disable ) > 0 && $total_val < $this->fixedvalue_disable ) {
 			return;
 		}
 
-		// fixed value
+		// fixed value.
 		$fixedvalue = $this->fixedpackvalue;
 		if ( $fixedvalue && $total_val > intval( $fixedvalue ) && ! $this->is_cod_used_as_payment() ) {
 			$total_val = intval( $fixedvalue );
 		}
 
-		if ( $currency != 'RUB' ) {
+		if ( 'RUB' !== $currency ) {
 			$total_val = $this->get_currency_value( $currency, $total_val, false );
 		}
 
@@ -603,23 +605,23 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			'nds'       => isset( $this->nds ) ? $this->nds : 'yes',
 		);
 
-		// add COD as service if it is selected as payment method
+		// add COD as service if it is selected as payment method.
 		if ( $this->is_cod_used_as_payment() ) {
 			$services[] = 46;
 		}
 
-		// add additional services
+		// add additional services.
 		if ( $services ) {
 			$base_params['service'] = implode( ',', $services );
 		}
 
 		if ( $dogovor ) {
 			$base_params['dogovor'] = trim( $dogovor );
-			$services[]             = 28; // corporate client
+			$services[]             = 28; // corporate client.
 		}
 
-		// check if shipping goes abroad
-		if ( $country_code != 'RU' ) {
+		// check if shipping goes abroad.
+		if ( 'RU' !== $country_code ) {
 			if ( ! in_array( $type, array( 4031, 4021, 7031, 5001, 5011, 9001, 9011, 3001, 3011 ) ) ) {
 				$this->maybe_print_error( __( 'For international shipping you should select international type in settings.', 'russian-post-and-ems-for-woocommerce' ) );
 
@@ -648,9 +650,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			set_transient( $request_hash, $shipping_cost, DAY_IN_SECONDS );
 		}
 
-		// in case PRO plugin has return data
+		// in case PRO plugin has return data.
 		if ( is_array( $shipping_cost ) ) {
-			// it could be request for international shipping which has not delivery time option
+			// it could be request for international shipping which has not delivery time option.
 			if ( isset( $shipping_cost['delivery-time'] ) ) {
 				$time_pro = $shipping_cost['delivery-time']['max-days'];
 			}
@@ -663,21 +665,21 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		$shipping_class_cost = $this->get_shipping_class_cost( $package );
 
-		// shipping cost + packages cost + additional cost
+		// shipping cost + packages cost + additional cost.
 		$cost = ceil( $shipping_cost + $addcost + $addpackcost + $shipping_class_cost );
 
 		if ( 'RUB' !== $currency ) {
 			$cost = $this->get_currency_value( $currency, $cost );
 		}
 
-		// do not apply if no cost is set
+		// do not apply if no cost is set.
 		if ( ! $cost ) {
 			$this->maybe_print_error( __( 'Error: no cost is set.', 'russian-post-and-ems-for-woocommerce' ) );
 
 			return;
 		}
 
-		// show delivery time
+		// show delivery time.
 		if ( 'yes' === $this->time && 'RU' === $country_code && ! $is_ekom ) {
 			if ( ! $delivery_time = $time_pro ) {
 				$request = add_query_arg(
@@ -719,8 +721,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Try to get index from PRO plugin base
 	 *
-	 * @param $shipping_state
-	 * @param $shipping_city
+	 * @param string $shipping_state state number.
+	 * @param string $shipping_city city.
 	 *
 	 * @return bool|int
 	 */
@@ -735,7 +737,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Match non cod like types of shipping and switch it to type with declared value or keep same if no match exists
 	 *
-	 * @param $type
+	 * @param int $type shipping type.
 	 *
 	 * @return mixed
 	 */
@@ -826,11 +828,10 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Find index for EKOM shipping type from PRO plugin
 	 *
-	 * @param $shipping_state
-	 * @param $shipping_city
-	 *
-	 * @param $type
-	 * @param $services
+	 * @param string $shipping_state shipping state.
+	 * @param string $shipping_city shipping city.
+	 * @param int    $type shipping type.
+	 * @param array  $services shipping services.
 	 *
 	 * @return bool|string
 	 */
@@ -839,9 +840,10 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			return false;
 		}
 
-		$shipping_state = intval( $shipping_state );
-		$ekom_index     = '';
-		$requirements   = array(
+		$shipping_state        = intval( $shipping_state );
+		$ekom_index            = '';
+		$all_validated_indexes = array();
+		$requirements          = array(
 			'cash_payment'           => false,
 			'contents_checking'      => false,
 			'with_fitting'           => false,
@@ -878,8 +880,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				}
 
 				if ( $validated ) {
-					$ekom_index = $index;
-					break;
+					$all_validated_indexes[] = intval( $index );
+
+					if ( '' === $ekom_index ) {
+						$ekom_index = intval( $index );
+					}
 				}
 			}
 		}
@@ -888,6 +893,18 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		if ( ! $ekom_index ) {
 			$this->log_it( sprintf( __( 'Could not find EKOM delivery point for the next address %1$s, type of EKOM %2$s, and services %3$s.', 'russian-post-and-ems-for-woocommerce' ), $shipping_state . ' ' . $shipping_city, $type, json_encode( $services ) ) );
+		}
+
+		$post_data = isset( $_POST['post_data'] ) ? wp_unslash( $_POST['post_data'] ) : ''; // phpcs:ignore WordPress.Security
+
+		if ( $ekom_index && $post_data ) {
+			parse_str( $post_data, $data_output );
+			if ( ! empty( $data_output['rpaefw_ekom_index'] ) ) {
+				$posted_index = intval( $data_output['rpaefw_ekom_index'] );
+				if ( in_array( $posted_index, $all_validated_indexes, true ) ) {
+					return $posted_index;
+				}
+			}
 		}
 
 		return $ekom_index;
@@ -997,7 +1014,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * Evaluate a cost from a sum/string.
 	 *
 	 * @param string $sum Sum of shipping.
-	 * @param array $args Args.
+	 * @param array  $args Args.
 	 *
 	 * @return string
 	 */
@@ -1153,8 +1170,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Connecting to the api server and get price
 	 *
-	 * @param $request
-	 * @param $get
+	 * @param       $request
+	 * @param       $get
 	 *
 	 * @param array $base_params
 	 *
@@ -1162,14 +1179,14 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 */
 	public function get_data_from_api( $request, $get, $base_params = array() ) {
 
-		//      if ( RPAEFW::is_pro_active() &&
-		//           ( $get === 'price' ) &&
-		//           get_option( 'rpaefw_token' ) &&
-		//           class_exists( 'RPAEFW_PRO' ) &&
-		//           class_exists( 'RPAEFW_PRO_Helper' ) ) {
+		// if ( RPAEFW::is_pro_active() &&
+		// ( $get === 'price' ) &&
+		// get_option( 'rpaefw_token' ) &&
+		// class_exists( 'RPAEFW_PRO' ) &&
+		// class_exists( 'RPAEFW_PRO_Helper' ) ) {
 		//
-		//          return $this->get_data_from_pro_api( $base_params );
-		//      }
+		// return $this->get_data_from_pro_api( $base_params );
+		// }
 
 		$remote_response = wp_remote_get( $request, array( 'timeout' => 15 ) );
 		$this->log_it( __( 'Making request to get:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . $request );
@@ -1222,7 +1239,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
-	 * create an authorized request if PRO plugin is active
+	 * Create an authorized request if PRO plugin is active
+	 *
+	 * @param array $base_params shipping settings.
 	 *
 	 * @return bool|mixed|null
 	 */
@@ -1275,7 +1294,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Return country number for Russian Post api base
 	 *
-	 * @param $code
+	 * @param string $code country code.
 	 *
 	 * @return false|int|string
 	 */
@@ -1537,7 +1556,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * In case old plugin version of shipping type is presented
 	 *
-	 * @param $old_value
+	 * @param string $old_value old plugin shipping type.
 	 *
 	 * @return bool|mixed
 	 */

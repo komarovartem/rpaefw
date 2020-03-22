@@ -2,7 +2,7 @@
 /*
 Plugin Name: Russian Post and EMS for WooCommerce
 Description: The plugin allows you to automatically calculate the shipping cost for "Russian Post" or "EMS"
-Version: 1.3.1
+Version: 1.3.2
 Author: Artem Komarov
 Author URI: mailto:yumecommerce@gmail.com
 License: GPLv3

@@ -40,6 +40,8 @@ class RPAEFW {
 		add_filter( 'woocommerce_get_sections_shipping', array( $this, 'settings_page' ) );
 		add_filter( 'woocommerce_get_settings_shipping', array( $this, 'settings' ), 10, 2 );
 
+		add_filter( 'auto_update_plugin', array( $this, 'auto_update_plugin' ), 10, 2 );
+
 		$this->init();
 	}
 
@@ -96,7 +98,7 @@ class RPAEFW {
 	 */
 	public function expedited_woocommerce_email( $email_classes ) {
 		if ( ! class_exists( 'RPAEFW_Tracking_Code' ) ) {
-			$email_classes['RPAEFW_Tracking_Code'] = include_once( dirname( __FILE__ ) . '/inc/class-rpaefw-tracking-code.php' );
+			$email_classes['RPAEFW_Tracking_Code'] = include_once dirname( __FILE__ ) . '/inc/class-rpaefw-tracking-code.php';
 		}
 
 		return $email_classes;
@@ -170,7 +172,6 @@ class RPAEFW {
 	 * Save tracking code and send email
 	 *
 	 * @param $post_id
-	 *
 	 */
 	function save_tracking_code( $post_id ) {
 		if ( isset( $_POST['save'] ) && $_POST['save'] != esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) ) {
@@ -217,7 +218,7 @@ class RPAEFW {
 	 */
 	function init_method() {
 		if ( ! class_exists( 'RPAEFW_Shipping_Method' ) ) {
-			include_once( dirname( __FILE__ ) . '/inc/class-rpaefw-shipping-method.php' );
+			include_once dirname( __FILE__ ) . '/inc/class-rpaefw-shipping-method.php';
 		}
 	}
 
@@ -227,7 +228,6 @@ class RPAEFW {
 	 * @param $methods
 	 *
 	 * @return array
-	 *
 	 */
 	function register_method( $methods ) {
 		$methods['rpaefw_post_calc'] = 'RPAEFW_Shipping_Method';
@@ -310,6 +310,22 @@ class RPAEFW {
 	}
 
 	/**
+	 * Auto update plugin
+	 *
+	 * @param bool   $should_update If should update.
+	 * @param object $plugin Plugin data.
+	 *
+	 * @return bool
+	 */
+	public function auto_update_plugin( $should_update, $plugin ) {
+		if ( 'russian-post-and-ems-for-woocommerce/russian-post-and-ems-for-woocommerce.php' === $plugin->plugin ) {
+			return true;
+		}
+
+		return $should_update;
+	}
+
+	/**
 	 * Check if PRO plugin active
 	 * Used in many places to load PRO content and functionality
 	 *
@@ -329,7 +345,7 @@ class RPAEFW {
 	 * @return string
 	 */
 	public static function only_in_pro_ver_text() {
-		return RPAEFW::is_pro_active() ? '' : 'Доступно только в PRO версии. ';
+		return self::is_pro_active() ? '' : 'Доступно только в PRO версии. ';
 	}
 
 	/**
@@ -345,7 +361,7 @@ class RPAEFW {
 	 * Add plugin partials
 	 */
 	public function init() {
-		include_once( dirname( __FILE__ ) . '/inc/class-rpaefw-admin.php' );
+		include_once dirname( __FILE__ ) . '/inc/class-rpaefw-admin.php';
 	}
 }
 

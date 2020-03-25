@@ -26,11 +26,14 @@ Special shipping methods and options for corporate clients of the Russian Post, 
 
 Moreover, the extension adds useful functionality which helps your clients to choose shipping methods more easily.
 
+* One click synchronization of orders with Russian Post dashboard
 * Include database with all Russian regions and cities
 * Automatically select postcode based on client address
 * Normalize client address, avoiding mistypes and not existing addresses
 * Recalculate shipping cost based on COD payment method selection
 * Additional options for shipping classes and shipping method adjustments
+* Support for dashboards with several OPS points
+* Support two different dashboards for different types of shipments
 
 [Demo website](https://yumecommerce.com/pochta/). PRO extension can be purchased on the [official WooCommerce marketplace](https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/)
 

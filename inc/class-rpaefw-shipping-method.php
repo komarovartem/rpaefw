@@ -285,7 +285,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		);
 
 		$settings_conditions = array(
-			'cond_settings' => array(
+			'cond_settings'      => array(
 				'title'       => esc_html__( 'Conditions', 'russian-post-and-ems-for-woocommerce' ),
 				'description' => esc_html__( 'Turn off and on a method based on some conditions. By default, the method will be turned off when the weight of the order is greater than allowed in a selected type of shipping.', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'title',
@@ -297,12 +297,12 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				'type'        => 'number',
 			),
 
-			'cond_min_weight' => array(
+			'cond_min_weight'    => array(
 				'title'       => esc_html__( 'Min. weight of order in grams', 'russian-post-and-ems-for-woocommerce' ),
 				'description' => esc_html__( 'Disable this method if the weight of the order is less than inputted value. Leave this field empty to allow any order weight.', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'number',
 			),
-			'cond_max_weight' => array(
+			'cond_max_weight'    => array(
 				'title'       => esc_html__( 'Max. weight of order in grams', 'russian-post-and-ems-for-woocommerce' ),
 				'description' => esc_html__( 'Disable this method if the weight of the order is more than inputted value. Leave this field empty to allow any order weight.', 'russian-post-and-ems-for-woocommerce' ),
 				'type'        => 'number',
@@ -711,9 +711,10 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		$this->add_rate(
 			array(
-				'id'    => $this->get_rate_id(),
-				'label' => $this->title . $time,
-				'cost'  => $cost,
+				'id'      => $this->get_rate_id(),
+				'label'   => $this->title . $time,
+				'cost'    => $cost,
+				'package' => $package,
 			)
 		);
 	}
@@ -822,7 +823,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			return false;
 		}
 
-		return in_array( $chosen_payment_method, array( 'cod', 'codpg_russian_post' ) );
+		return in_array( $chosen_payment_method, array( 'cod', 'codpg_russian_post' ), true );
 	}
 
 	/**
@@ -1173,7 +1174,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * @param       $request
 	 * @param       $get
 	 *
-	 * @param array $base_params
+	 * @param array   $base_params
 	 *
 	 * @return mixed
 	 */

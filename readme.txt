@@ -66,6 +66,7 @@ The plugin by itself has no methods to calculate the shipping price. All data co
 = 1.3.2 =
 
 * Добавлено обновление цены для ЕКОМ отправлений
+* Добавлена возможность удаления кэша
 
 = 1.3.1 =
 

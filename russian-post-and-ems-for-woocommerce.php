@@ -41,6 +41,7 @@ class RPAEFW {
 		add_filter( 'woocommerce_get_settings_shipping', array( $this, 'settings' ), 10, 2 );
 
 		add_filter( 'auto_update_plugin', array( $this, 'auto_update_plugin' ), 10, 2 );
+		add_action( 'woocommerce_debug_tools', array( $this, 'add_debug_tools' ) );
 
 		$this->init();
 	}
@@ -323,6 +324,41 @@ class RPAEFW {
 		}
 
 		return $should_update;
+	}
+
+	/**
+	 * Add debug tools
+	 *
+	 * @param array $tools List of available tools.
+	 *
+	 * @return array
+	 */
+	public function add_debug_tools( $tools ) {
+		$tools['rpaefw_clear_transients'] = array(
+			'name'     => __( 'Russian Post transients', 'russian-post-and-ems-for-woocommerce' ),
+			'button'   => __( 'Clear transients', 'russian-post-and-ems-for-woocommerce' ),
+			'desc'     => __( 'This tool will clear the request transients cache.', 'russian-post-and-ems-for-woocommerce' ),
+			'callback' => array( $this, 'clear_transients' ),
+		);
+		return $tools;
+	}
+
+	/**
+	 * Callback to clear transients
+	 *
+	 * @return string
+	 */
+	public function clear_transients() {
+		global $wpdb;
+		$transient_names = array( 'rpaefw_currency_rates', 'rpaefw_auto_sync_pvz' );
+
+		foreach ( $transient_names as $name ) {
+			delete_transient( $name );
+		}
+
+		$wpdb->query( "DELETE FROM $wpdb->options WHERE option_name LIKE '%_rpaefw_cache_%'" );
+
+		return __( 'Transients cleared', 'russian-post-and-ems-for-woocommerce' );
 	}
 
 	/**

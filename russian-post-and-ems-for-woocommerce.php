@@ -108,11 +108,11 @@ class RPAEFW {
 	/**
 	 * Add trigger action
 	 *
-	 * @param $actions
+	 * @param array $actions Email actions.
 	 *
 	 * @return array
 	 */
-	function woocommerce_email_add_actions( $actions ) {
+	public function woocommerce_email_add_actions( $actions ) {
 		$actions[] = 'rpaefw_tracking_code_send';
 
 		return $actions;
@@ -121,26 +121,19 @@ class RPAEFW {
 	/**
 	 * Add meta box with tracking code
 	 *
-	 * @param $post_type
-	 * @param $post
+	 * @param string $post_type Post type.
+	 * @param object $post Order object.
 	 */
-	function add_meta_tracking_code_box( $post_type, $post ) {
+	public function add_meta_tracking_code_box( $post_type, $post ) {
 		if ( 'shop_order' !== $post_type ) {
 			return;
 		}
 
-		$order     = wc_get_order( $post );
-		$method_id = 0;
-
-		foreach ( $order->get_shipping_methods() as $shipping ) {
-			if ( in_array( $shipping->get_method_id(), array( 'rpaefw_post_calc', 'free_shipping' ), true ) ) {
-				$method_id = $shipping->get_instance_id();
+		// do not display box if russian post shipping is not used.
+		foreach ( wc_get_order( $post )->get_shipping_methods() as $shipping ) {
+			if ( ! in_array( $shipping->get_method_id(), array( 'rpaefw_post_calc', 'free_shipping' ), true ) ) {
+				return;
 			}
-		}
-
-		// do not display box if russian post shipping is not used
-		if ( ! $method_id ) {
-			return;
 		}
 
 		add_meta_box(

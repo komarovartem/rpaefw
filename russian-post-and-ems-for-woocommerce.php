@@ -1,16 +1,16 @@
 <?php
-/*
-Plugin Name: Russian Post and EMS for WooCommerce
-Description: The plugin allows you to automatically calculate the shipping cost for "Russian Post" or "EMS"
-Version: 1.3.3
-Author: Artem Komarov
-Author URI: mailto:yumecommerce@gmail.com
-License: GPLv3
-License URI: https://www.gnu.org/licenses/gpl-3.0.html
-Text Domain: russian-post-and-ems-for-woocommerce
-WC requires at least: 3.0.0
-WC tested up to: 4.0
-*/
+/**
+ * Plugin Name: Russian Post and EMS for WooCommerce
+ * Description: The plugin allows you to automatically calculate the shipping cost for "Russian Post" or "EMS"
+ * Version: 1.3.3
+ * Author: Artem Komarov
+ * Author URI: mailto:yumecommerce@gmail.com
+ * License: GPLv3
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ * Text Domain: russian-post-and-ems-for-woocommerce
+ * WC requires at least: 3.0.0
+ * WC tested up to: 4.0
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -18,22 +18,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class RPAEFW {
 	public function __construct() {
-		// apply plugin textdomain
+		// apply plugin textdomain.
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 
-		// add new order status
+		// add new order status.
 		add_action( 'init', array( $this, 'register_order_confirmed_order_status' ) );
-		add_filter( 'wc_order_statuses', array( $this, 'add_order_confirmed_to_order_statuses' ), 10, 1 );
+		add_filter( 'wc_order_statuses', array( $this, 'add_order_status' ), 10, 1 );
 
-		// add email template for tracking code
+		// add email template for tracking code.
 		add_filter( 'woocommerce_email_classes', array( $this, 'expedited_woocommerce_email' ) );
 		add_filter( 'woocommerce_email_actions', array( $this, 'woocommerce_email_add_actions' ) );
 
-		// tracking code meta box and email sending
+		// tracking code meta box and email sending.
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_tracking_code_box' ), 10, 2 );
 		add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_tracking_code' ), 0, 2 );
 
-		// add new shipping method
+		// add new shipping method.
 		add_action( 'woocommerce_shipping_init', array( $this, 'init_method' ) );
 		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_method' ) );
 
@@ -42,6 +42,8 @@ class RPAEFW {
 
 		add_filter( 'auto_update_plugin', array( $this, 'auto_update_plugin' ), 10, 2 );
 		add_action( 'woocommerce_debug_tools', array( $this, 'add_debug_tools' ) );
+
+		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ) );
 
 		$this->init();
 	}
@@ -71,15 +73,15 @@ class RPAEFW {
 	}
 
 	/**
-	 * Post Data shortcode
+	 * Add new order status
 	 *
-	 * @param $order_statuses
+	 * @param array $order_statuses Order statuses.
 	 *
 	 * @return array
 	 */
-	public function add_order_confirmed_to_order_statuses( $order_statuses ) {
+	public function add_order_status( $order_statuses ) {
 		$new_order_statuses = array();
-		// add new order status after processing
+		// add new order status after processing.
 		foreach ( $order_statuses as $key => $status ) {
 			$new_order_statuses[ $key ] = $status;
 			if ( 'wc-processing' === $key ) {
@@ -93,7 +95,7 @@ class RPAEFW {
 	/**
 	 * Add new email class to woocommerce emails tab
 	 *
-	 * @param $email_classes
+	 * @param array $email_classes All email classes.
 	 *
 	 * @return array
 	 */
@@ -152,7 +154,7 @@ class RPAEFW {
 	/**
 	 * Print HTML form for meta box
 	 */
-	function tracking_code_meta_box() {
+	public function tracking_code_meta_box() {
 		global $post;
 
 		$post_tracking_number = sanitize_text_field( get_post_meta( $post->ID, '_post_tracking_number', true ) );
@@ -165,10 +167,10 @@ class RPAEFW {
 	/**
 	 * Save tracking code and send email
 	 *
-	 * @param $post_id
+	 * @param int $post_id Post ID.
 	 */
-	function save_tracking_code( $post_id ) {
-		if ( isset( $_POST['save'] ) && $_POST['save'] != esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) ) {
+	public function save_tracking_code( $post_id ) {
+		if ( isset( $_POST['save'] ) && $_POST['save'] !== esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) ) {
 			return;
 		}
 
@@ -355,6 +357,27 @@ class RPAEFW {
 	}
 
 	/**
+	 * Display helpful links
+	 *
+	 * @param array $links Key - link pair.
+	 *
+	 * @return array
+	 */
+	public function plugin_action_links( $links ) {
+		$settings = array( 'settings' => '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '">' . esc_html__( 'Settings', 'russian-post-and-ems-for-woocommerce' ) . '</a>' );
+
+		$links = $settings + $links;
+
+		if ( self::is_pro_active() ) {
+			return $links;
+		}
+
+		$links['pro'] = '<a href="https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/" target="_blank" style="color: #96588a">' . esc_html__( 'Buy PRO version', 'russian-post-and-ems-for-woocommerce' ) . '</a>';
+
+		return $links;
+	}
+
+	/**
 	 * Check if PRO plugin active
 	 * Used in many places to load PRO content and functionality
 	 *
@@ -394,7 +417,7 @@ class RPAEFW {
 	}
 }
 
-// init plugin if woo is active
+// init plugin if woo is active.
 if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
 	new RPAEFW();
 }

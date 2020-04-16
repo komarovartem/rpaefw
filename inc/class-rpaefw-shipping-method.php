@@ -147,6 +147,10 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 				if ( ! $is_ekom ) {
 					$to = $this->get_index_based_on_address( $state, $city );
 					$to = $to ? $to : $postal_code;
+
+					if ( ! $to ) {
+						return;
+					}
 				}
 			} else {
 				$to = $postal_code;
@@ -909,7 +913,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * @param       $request
 	 * @param       $get
 	 *
-	 * @param array $base_params
+	 * @param array   $base_params
 	 *
 	 * @return mixed
 	 */

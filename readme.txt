@@ -63,6 +63,10 @@ The plugin by itself has no methods to calculate the shipping price. All data co
 
 == Changelog ==
 
+= 1.3.3 =
+
+* Исправлена логика отображения для заказов созданных через админ панель
+
 = 1.3.2 =
 
 * Добавлено обновление цены для ЕКОМ отправлений

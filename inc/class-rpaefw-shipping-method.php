@@ -1,8 +1,11 @@
 <?php
+/**
+ * Russian Post shipping method
+ *
+ * @package Russian Post/Shipping
+ */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
 /**
  * RPAEFW_Shipping_Method.
@@ -46,7 +49,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$this->add_rate(
 			array(
 				'id'    => $this->get_rate_id(),
-				'label' => $this->title . '. ' . $message . '. ' . __( 'This message visible only for site administrator.', 'russian-post-and-ems-for-woocommerce' ),
+				'label' => $this->title . '. ' . $message . '. ' . __( 'This message and method are visible only for the site Administrator for debugging purposes.', 'russian-post-and-ems-for-woocommerce' ),
 				'cost'  => 0,
 			)
 		);

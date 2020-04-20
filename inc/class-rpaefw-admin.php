@@ -1,14 +1,26 @@
 <?php
+/**
+ * Russian Post admin
+ *
+ * @package Russian Post/Admin
+ */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined( 'ABSPATH' ) || exit;
 
+/**
+ * Russian Post admin class
+ */
 class RPAEFW_Admin {
+	/**
+	 * Constructor
+	 */
 	public function __construct() {
 		add_action( 'admin_footer', array( $this, 'admin_promo_notice' ) );
 	}
 
+	/**
+	 * Promo notice
+	 */
 	public function admin_promo_notice() {
 		if ( RPAEFW::is_pro_active() ) {
 			return;

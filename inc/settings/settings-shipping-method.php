@@ -1,6 +1,8 @@
 <?php
 /**
  * Settings for shipping method.
+ *
+ * @package Russian Post/Settings
  */
 
 defined( 'ABSPATH' ) || exit;

@@ -286,8 +286,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			$base_params['to'] = $to;
 		}
 
-		if ( isset( $this->free_shipping ) && 'yes' === $this->free_shipping ) {
-			if ( $this->is_free_shipping_available( $this->free_shipping_cond, $this->free_shipping_cond_amount ) ) {
+		if ( isset( $this->free_shipping ) && 'yes' === $this->free_shipping && RPAEFW::is_pro_active() ) {
+			if ( RPAEFW_PRO_Helper::is_free_shipping_available( $this ) ) {
 				$time = $this->get_delivery_time( $country_code, $is_ekom, $from, $to, $type );
 				$this->add_rate(
 					array(
@@ -299,6 +299,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					)
 				);
 
+				return;
+			} else {
 				return;
 			}
 		}
@@ -399,66 +401,6 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		return $time;
-	}
-
-	/**
-	 * See if free shipping is available based on the package and cart.
-	 *
-	 * @param array $requires Shipping package.
-	 * @param int   $min_amount Min sum of the cart.
-	 *
-	 * @return bool
-	 */
-	public function is_free_shipping_available( $requires, $min_amount ) {
-		$has_coupon         = false;
-		$has_met_min_amount = false;
-
-		if ( in_array( $requires, array( 'coupon', 'either', 'both' ), true ) ) {
-			$coupons = WC()->cart->get_coupons();
-
-			if ( $coupons ) {
-				foreach ( $coupons as $code => $coupon ) {
-					if ( $coupon->is_valid() && $coupon->get_free_shipping() ) {
-						$has_coupon = true;
-						break;
-					}
-				}
-			}
-		}
-
-		if ( in_array( $requires, array( 'min_amount', 'either', 'both' ), true ) ) {
-			$total = WC()->cart->get_displayed_subtotal();
-
-			if ( WC()->cart->display_prices_including_tax() ) {
-				$total = round( $total - ( WC()->cart->get_discount_total() + WC()->cart->get_discount_tax() ), wc_get_price_decimals() );
-			} else {
-				$total = round( $total - WC()->cart->get_discount_total(), wc_get_price_decimals() );
-			}
-
-			if ( $total >= $min_amount ) {
-				$has_met_min_amount = true;
-			}
-		}
-
-		switch ( $requires ) {
-			case 'min_amount':
-				$is_available = $has_met_min_amount;
-				break;
-			case 'coupon':
-				$is_available = $has_coupon;
-				break;
-			case 'both':
-				$is_available = $has_met_min_amount && $has_coupon;
-				break;
-			case 'either':
-				$is_available = $has_met_min_amount || $has_coupon;
-				break;
-			default:
-				$is_available = true;
-				break;
-		}
-
-		return $is_available;
 	}
 
 	/**

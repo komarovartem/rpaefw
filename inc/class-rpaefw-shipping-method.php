@@ -252,11 +252,6 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			'nds'       => isset( $this->nds ) ? $this->nds : 'yes',
 		);
 
-		// add COD as service if it is selected as payment method.
-		if ( $this->is_cod_used_as_payment() ) {
-			$services[] = 46;
-		}
-
 		// add additional services.
 		if ( $services ) {
 			$base_params['service'] = implode( ',', $services );

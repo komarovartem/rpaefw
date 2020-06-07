@@ -62,8 +62,13 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * @param string $type error type.
 	 */
 	public function log_it( $message, $type = 'info' ) {
-		$logger = wc_get_logger();
-		$logger->{$type}( $message, array( 'source' => 'russian-post' ) );
+		$hide_info_messages = get_option( 'rpaefw_hide_info_log', 'no' );
+
+		if ( 'yes' === $hide_info_messages && 'info' === $type ) {
+			return;
+		}
+
+		wc_get_logger()->{$type}( $message, array( 'source' => 'russian-post' ) );
 	}
 
 	/**
@@ -853,7 +858,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 * @param       $request
 	 * @param       $get
 	 *
-	 * @param array   $base_params
+	 * @param array $base_params
 	 *
 	 * @return mixed
 	 */

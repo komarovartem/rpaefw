@@ -132,7 +132,7 @@ class RPAEFW {
 
 		add_meta_box(
 			'rpaefw_meta_tracking_code',
-			esc_html__( 'Russian Post Tracking Code', 'russian-post-and-ems-for-woocommerce' ),
+			esc_html__( 'Russian Post Tracking', 'russian-post-and-ems-for-woocommerce' ),
 			array(
 				$this,
 				'tracking_code_meta_box',
@@ -150,14 +150,26 @@ class RPAEFW {
 		global $post;
 
 		$post_tracking_number = sanitize_text_field( get_post_meta( $post->ID, '_post_tracking_number', true ) );
+		$option               = get_option( 'rpaefw_use_auto_email_tracking_code' );
 
-		echo '<p><label for="rpaefw_postcode_tracking_provider" style="width: 50px; display: inline-block;">' . esc_html__( 'Code', 'russian-post-and-ems-for-woocommerce' ) . ':</label>';
-		echo '<input type="text" id="rpaefw_postcode_tracking_provider" name="rpaefw_postcode_tracking_provider" value="' . esc_attr( $post_tracking_number ) . '"/></p>';
-		echo '<p><input type="submit" class="add_note button" name="save" value="' . esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) . '"></p>';
+		if ( $option && self::is_pro_active() ) {
+			echo sprintf( esc_html__( 'The email with track number is sending automatically based on your %1$s settings. %2$s' ), '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '" target="_blank">', '</a>' );
+		} else {
+			echo '<p><label for="rpaefw_postcode_tracking_provider" style="width: 50px; display: inline-block;">' . esc_html__( 'Code', 'russian-post-and-ems-for-woocommerce' ) . ':</label>';
+			echo '<input type="text" id="rpaefw_postcode_tracking_provider" name="rpaefw_postcode_tracking_provider" value="' . esc_attr( $post_tracking_number ) . '"/></p>';
+			echo '<p><input type="submit" class="add_note button" name="save" value="' . esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) . '"></p>';
+			if ( ! self::is_pro_active() ) {
+				echo '<p>';
+				echo sprintf( esc_html__( '%1$s Get PRO version %2$s to automatically synchronize order with the tracking.', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/" target="_blank">', '</a>' );
+				echo '</p>';
+			}
+		}
+
+		do_action( 'rpaefw_after_tracking_meta_box', $post->ID );
 	}
 
 	/**
-	 * Save tracking code and send email
+	 * Save tracking code
 	 *
 	 * @param int $post_id Post ID.
 	 */
@@ -176,6 +188,16 @@ class RPAEFW {
 
 		update_post_meta( $post_id, '_post_tracking_number', $tracking_number );
 
+		self::send_tracking_code( $post_id, $tracking_number );
+	}
+
+	/**
+	 * Send tracking code
+	 *
+	 * @param int $post_id Order ID.
+	 * @param int $tracking_number Tracking code.
+	 */
+	public static function send_tracking_code( $post_id, $tracking_number ) {
 		$order = wc_get_order( $post_id );
 
 		/* translators: tracking number */
@@ -276,7 +298,7 @@ class RPAEFW {
 	 */
 	public function clear_transients() {
 		global $wpdb;
-		$transient_names = array( 'rpaefw_currency_rates', 'rpaefw_auto_sync_pvz' );
+		$transient_names = array( 'rpaefw_currency_rates', 'rpaefw_auto_sync_pvz', 'rpaefw_auto_change_order_status' );
 
 		foreach ( $transient_names as $name ) {
 			delete_transient( $name );

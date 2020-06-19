@@ -48,9 +48,61 @@ $settings = array(
 	),
 );
 
+if ( ! RPAEFW::is_pro_active() ) {
+	$settings[] = array(
+		'type' => 'sectionend',
+		'id'   => 'rpaefw_shipping_options',
+	);
+
+	$settings[] = array(
+		'title' => 'Отслеживание',
+		'type'  => 'title',
+	);
+
+	$settings[] = array(
+		'title'             => 'Отправка кода отслеживания',
+		'desc'              => $this->only_in_pro_ver_text() . 'Вы можете отправить код отслеживания сразу после создания нового отправления или при изменении статуса заказа на "Доставляется".',
+		'type'              => 'text',
+		'custom_attributes' => array(
+			$this->is_pro_active() ? '' : 'disabled' => '',
+		),
+	);
+
+	$settings[] = array(
+		'title'             => 'Синхронизировать заказ со статусом отслеживания',
+		'desc'              => $this->only_in_pro_ver_text() . 'Выберите, как часто проверять статус отслеживания. Автоматически устанавливает статус заказа с «Обработка» на «Доставляется» после того, как отправление будет принято в ОПС. И изменяет статуса заказа на «Выполнен», когда отправление будет получено покупателем.',
+		'type'              => 'text',
+		'custom_attributes' => array(
+			$this->is_pro_active() ? '' : 'disabled' => '',
+		),
+	);
+
+	$settings[] = array(
+		'title'             => 'Блок отслеживания',
+		'desc'              => $this->only_in_pro_ver_text() . 'Отображение информации о трек номере на странице учетной записи клиента.',
+		'type'              => 'text',
+		'custom_attributes' => array(
+			$this->is_pro_active() ? '' : 'disabled' => '',
+		),
+	);
+}
+
 $settings = apply_filters( 'rpaefw_settings', $settings );
 
-$settings[] = array(
+
+$additional_settings   = array();
+$additional_settings[] = array(
+	'type' => 'sectionend',
+	'id'   => 'rpaefw_shipping_options',
+);
+$additional_settings[] = array(
+	'title' => __( 'Other', 'russian-post-and-ems-for-woocommerce' ),
+	'type'  => 'title',
+);
+
+$additional_settings = apply_filters( 'rpaefw_additional_settings', $additional_settings );
+
+$additional_settings[] = array(
 	'title'    => __( 'Log Messages', 'russian-post-and-ems-for-woocommerce' ),
 	'type'     => 'checkbox',
 	'id'       => 'rpaefw_hide_info_log',
@@ -59,9 +111,9 @@ $settings[] = array(
 	'desc_tip' => __( 'By default all requests stored in WooCommerce logs. You can hide info messages and keep only errors and warnings.', 'woocommerce' ),
 );
 
-$settings[] = array(
+$additional_settings[] = array(
 	'type' => 'sectionend',
 	'id'   => 'rpaefw_shipping_options',
 );
 
-return $settings;
+return array_merge( $settings, $additional_settings );

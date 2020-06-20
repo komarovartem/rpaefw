@@ -3,7 +3,7 @@ Contributors: artemkomarov
 Tags: woocommerce, woocommerce shipping, ecommerce, shipping
 Requires at least: 5
 Tested up to: 5.4
-Stable tag: 1.3.4
+Stable tag: 1.3.5
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -27,6 +27,9 @@ Special shipping methods and options for corporate clients of the Russian Post, 
 Moreover, the extension adds useful functionality which helps your clients to choose shipping methods more easily.
 
 * One click synchronization of orders with Russian Post dashboard
+* Automatic getting and sending track-number
+* Automatic changing order status based on tracking
+* Options for creating free shipping
 * Include database with all Russian regions and cities
 * Automatically select postcode based on client address
 * Normalize client address, avoiding mistypes and not existing addresses
@@ -34,6 +37,7 @@ Moreover, the extension adds useful functionality which helps your clients to ch
 * Additional options for shipping classes and shipping method adjustments
 * Support for dashboards with several OPS points
 * Support two different dashboards for different types of shipments
+* Flexible options for shipping classes
 
 [Demo website](https://yumecommerce.com/pochta/). PRO extension can be purchased on the [official WooCommerce marketplace](https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/)
 
@@ -60,8 +64,14 @@ The plugin by itself has no methods to calculate the shipping price. All data co
 1. Основные настройки
 2. PRO дополнение: выбор области и города из списка
 3. PRO дополнение: выбор пунктов выдачи заказа ЕКОМ в городе покупателя
+4. PRO дополнение: автоматический трекинг отправлений и отслеживание статуса
 
 == Changelog ==
+
+= 1.3.5 =
+
+* Исправлен расчет для COD (card on delivery)
+* Добавлен полностью автоматизированный трекинг отправлений для PRO версии
 
 = 1.3.4 =
 

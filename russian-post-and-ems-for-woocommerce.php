@@ -153,7 +153,7 @@ class RPAEFW {
 		$option               = get_option( 'rpaefw_use_auto_email_tracking_code' );
 
 		if ( $option && self::is_pro_active() ) {
-			echo sprintf( esc_html__( 'The email with track number is sending automatically based on your %1$s settings. %2$s' ), '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '" target="_blank">', '</a>' );
+			echo sprintf( esc_html__( 'The email with track number is sending automatically based on your %1$s settings. %2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '" target="_blank">', '</a>' );
 		} else {
 			echo '<p><label for="rpaefw_postcode_tracking_provider" style="width: 50px; display: inline-block;">' . esc_html__( 'Code', 'russian-post-and-ems-for-woocommerce' ) . ':</label>';
 			echo '<input type="text" id="rpaefw_postcode_tracking_provider" name="rpaefw_postcode_tracking_provider" value="' . esc_attr( $post_tracking_number ) . '"/></p>';

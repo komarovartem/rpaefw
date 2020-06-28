@@ -108,7 +108,7 @@ $additional_settings[] = array(
 	'id'       => 'rpaefw_hide_info_log',
 	'desc'     => __( 'Hide Info Log Messages', 'russian-post-and-ems-for-woocommerce' ),
 	'default'  => 'no',
-	'desc_tip' => __( 'By default all requests stored in WooCommerce logs. You can hide info messages and keep only errors and warnings.', 'woocommerce' ),
+	'desc_tip' => __( 'By default all requests stored in WooCommerce logs. You can hide info messages and keep only errors and warnings.', 'russian-post-and-ems-for-woocommerce' ),
 );
 
 $additional_settings[] = array(

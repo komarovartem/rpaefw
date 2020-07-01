@@ -28,7 +28,7 @@ class RPAEFW {
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 
 		// add new order status.
-		add_action( 'init', array( $this, 'register_order_confirmed_order_status' ) );
+		add_action( 'init', array( $this, 'register_delivering_status' ) );
 		add_filter( 'wc_order_statuses', array( $this, 'add_order_status' ), 10, 1 );
 
 		// add email template for tracking code.
@@ -63,7 +63,7 @@ class RPAEFW {
 	/**
 	 * Register new status
 	 */
-	public function register_order_confirmed_order_status() {
+	public function register_delivering_status() {
 		register_post_status(
 			'wc-delivering',
 			array(

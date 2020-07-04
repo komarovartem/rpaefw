@@ -37,41 +37,6 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
-	 * Print human error only for admin to easy debug errors
-	 *
-	 * @param string $message error message.
-	 */
-	public function maybe_print_error( $message = '' ) {
-		if ( ! current_user_can( 'administrator' ) ) {
-			return;
-		}
-
-		$this->add_rate(
-			array(
-				'id'    => $this->get_rate_id(),
-				'label' => $this->title . '. ' . $message . '. ' . __( 'This message and method are visible only for the site Administrator for debugging purposes.', 'russian-post-and-ems-for-woocommerce' ),
-				'cost'  => 0,
-			)
-		);
-	}
-
-	/**
-	 * Log some data using WC logger
-	 *
-	 * @param string $message error message.
-	 * @param string $type error type.
-	 */
-	public function log_it( $message, $type = 'info' ) {
-		$hide_info_messages = get_option( 'rpaefw_hide_info_log', 'no' );
-
-		if ( 'yes' === $hide_info_messages && 'info' === $type ) {
-			return;
-		}
-
-		wc_get_logger()->{$type}( $message, array( 'source' => 'russian-post' ) );
-	}
-
-	/**
 	 * Calculate_shipping function.
 	 *
 	 * @param array $package (default: array()).
@@ -309,7 +274,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$request_hash = 'rpaefw_cache_' . md5( $request );
 
 		if ( ! $shipping_cost = get_transient( $request_hash ) ) {
-			if ( ! $shipping_cost = $this->get_data_from_api( $request, 'price', $base_params ) ) {
+			if ( ! $shipping_cost = $this->get_data_from_api( $request, 'price', $is_ekom ) ) {
 				return;
 			}
 
@@ -362,11 +327,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Get delivery time from API
 	 *
-	 * @param $country_code
-	 * @param $is_ekom
-	 * @param $from
-	 * @param $to
-	 * @param $type
+	 * @param string  $country_code Country code.
+	 * @param boolean $is_ekom EKOM.
+	 * @param string  $from From index.
+	 * @param string  $to To index.
+	 * @param int     $type Shipping type.
 	 *
 	 * @return string
 	 */
@@ -522,6 +487,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	 */
 	public function get_ekom_index( $shipping_state, $shipping_city, $type, $services ) {
 		if ( ! $file = fopen( WP_PLUGIN_DIR . '/russian-post-and-ems-pro-for-woocommerce/inc/post-data-base/pvz.txt', 'r' ) ) {
+			$this->log_it( __( 'Could not open PVZ file to get EKOM index.', 'russian-post-and-ems-for-woocommerce' ), 'error' );
+
 			return false;
 		}
 
@@ -534,6 +501,12 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			'with_fitting'           => false,
 			'functionality_checking' => false,
 		);
+
+		if ( ! $shipping_state || ! $shipping_city ) {
+			$this->log_it( __( 'Shipping state or city is not provided to get EKOM index.', 'russian-post-and-ems-for-woocommerce' ), 'error' );
+
+			return false;
+		}
 
 		if ( $type == 53070 ) {
 			$requirements['cash_payment'] = true;
@@ -553,7 +526,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		while ( ( $line = fgets( $file ) ) !== false ) {
 			list( $index, $state, $city, $address, $coordinates, $card_payment, $cash_payment, $contents_checking, $functionality_checking, $with_fitting ) = explode( "\t", $line );
-			if ( $shipping_state == $state && $shipping_city == $city ) {
+			if ( intval( $state ) === $shipping_state && $city === $shipping_city ) {
 				$validated = true;
 
 				foreach ( $requirements as $name => $need ) {
@@ -577,7 +550,8 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		fclose( $file );
 
 		if ( ! $ekom_index ) {
-			$this->log_it( sprintf( __( 'Could not find EKOM delivery point for the next address %1$s, type of EKOM %2$s, and services %3$s.', 'russian-post-and-ems-for-woocommerce' ), $shipping_state . ' ' . $shipping_city, $type, json_encode( $services ) ) );
+			/* translators: city and state */
+			$this->log_it( sprintf( __( 'Could not find EKOM delivery point for the next address %1$s, type of EKOM %2$s, and services %3$s.', 'russian-post-and-ems-for-woocommerce' ), $shipping_state . ' ' . $shipping_city, $type, wp_json_encode( $services ) ) );
 		}
 
 		$post_data = isset( $_POST['post_data'] ) ? wp_unslash( $_POST['post_data'] ) : ''; // phpcs:ignore WordPress.Security
@@ -604,7 +578,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$currency       = get_option( 'woocommerce_currency', 'RUB' );
 		$all_currencies = get_woocommerce_currencies();
 
-		// validate currency since some users might have issue when it's not set properly
+		// validate currency since some users might have issue when it's not set properly.
 		if ( isset( $all_currencies[ $currency ] ) ) {
 			return $currency;
 		}
@@ -777,15 +751,15 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Get currency value based on CBR rate
 	 *
-	 * @param $currency
-	 * @param $cost
-	 * @param $from_rub
+	 * @param string  $currency Currency.
+	 * @param float   $cost Cost.
+	 * @param boolean $from_rub From RUB.
 	 *
 	 * @return int
 	 */
 	public function get_currency_value( $currency, $cost, $from_rub = true ) {
-		// check if third party plugins are installed
-		if ( in_array( 'woocommerce-currency-switcher/index.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
+		// check if third party plugins are installed.
+		if ( in_array( 'woocommerce-currency-switcher/index.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ), true ) ) {
 			$woocs = get_option( 'woocs' );
 
 			if ( $woocs && is_array( $woocs ) && isset( $woocs['RUB'] ) ) {
@@ -805,7 +779,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		$valute_obj = null;
 
-		// find obj for provided currency
+		// find obj for provided currency.
 		foreach ( $rates->Valute as $valute ) {
 			if ( $valute->CharCode == $currency ) {
 				$valute_obj = $valute;
@@ -813,7 +787,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 		}
 
-		// if no match is found return false
+		// if no match is found return false.
 		if ( ! $valute_obj ) {
 			$this->maybe_print_error( __( 'Could not find currency code in a base.', 'russian-post-and-ems-for-woocommerce' ) );
 
@@ -846,7 +820,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			set_transient( $transient_name, $rates, DAY_IN_SECONDS );
 		}
 
-		// parce rates
+		// parse rates.
 		$rates = simplexml_load_string( $rates );
 
 		return $rates;
@@ -855,24 +829,13 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Connecting to the api server and get price
 	 *
-	 * @param       $request
-	 * @param       $get
-	 *
-	 * @param array $base_params
+	 * @param string  $request Url for request.
+	 * @param string  $get Type of req.
+	 * @param boolean $is_ekom EKOM condition.
 	 *
 	 * @return mixed
 	 */
-	public function get_data_from_api( $request, $get, $base_params = array() ) {
-
-		// if ( RPAEFW::is_pro_active() &&
-		// ( $get === 'price' ) &&
-		// get_option( 'rpaefw_token' ) &&
-		// class_exists( 'RPAEFW_PRO' ) &&
-		// class_exists( 'RPAEFW_PRO_Helper' ) ) {
-		//
-		// return $this->get_data_from_pro_api( $base_params );
-		// }
-
+	public function get_data_from_api( $request, $get, $is_ekom = false ) {
 		$remote_response = wp_remote_get( $request, array( 'timeout' => 15 ) );
 		$this->log_it( __( 'Making request to get:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . $request );
 
@@ -884,7 +847,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			return false;
 		}
 
-		if ( $response_code = wp_remote_retrieve_response_code( $remote_response ) !== 200 ) {
+		$response_code = wp_remote_retrieve_response_code( $remote_response );
+
+		if ( 200 !== $response_code ) {
 			$error_message = __( 'Request error for', 'russian-post-and-ems-for-woocommerce' ) . '"' . $get . '". CODE: ' . $response_code . ' ' . wp_remote_retrieve_body( $remote_response );
 			$this->log_it( $error_message, 'error' );
 			$this->maybe_print_error( $error_message );
@@ -894,19 +859,28 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		$body = wp_remote_retrieve_body( $remote_response );
 
-		if ( $get === 'price' || $get === 'time' ) {
+		if ( 'price' === $get || 'time' === $get ) {
 			$response = json_decode( $body, true );
 
 			if ( isset( $response['error'] ) ) {
 				$error_message = __( 'Error:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . $response['error'][0];
 				$this->log_it( $error_message, 'error' );
-				$this->maybe_print_error( $error_message );
+
+				if ( $is_ekom ) {
+					if ( $this->is_method_selected() ) {
+						$this->maybe_print_error( __( 'Error:', 'russian-post-and-ems-for-woocommerce' ) . ' ' . __( 'could not calculate shipping rate for selected delivery point. Please select another delivery point.', 'russian-post-and-ems-for-woocommerce' ), false, false );
+					} else {
+						$this->maybe_print_error( '', false, false );
+					}
+				} else {
+					$this->maybe_print_error( $error_message );
+				}
 
 				return false;
 			}
 
-			if ( $get === 'price' ) {
-				if ( $this->nds == 'no' && RPAEFW::is_pro_active() ) {
+			if ( 'price' === $get ) {
+				if ( 'no' === $this->nds && RPAEFW::is_pro_active() ) {
 					return $response['pay'] / 100;
 				} else {
 					return $response['paynds'] / 100;
@@ -916,11 +890,21 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 		}
 
-		if ( $get === 'currency' ) {
+		if ( 'currency' === $get ) {
 			return $body;
 		}
 
 		return false;
+	}
+
+
+	/**
+	 * Check if current method is selected
+	 *
+	 * @return bool
+	 */
+	public function is_method_selected() {
+		return WC()->session->get( 'chosen_shipping_methods' )[0] === $this->id . ':' . $this->get_instance_id();
 	}
 
 	/**
@@ -1275,5 +1259,44 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		);
 
 		return isset( $old_types[ $old_value ] ) ? $old_types[ $old_value ] : false;
+	}
+
+	/**
+	 * Print human error only for admin to easy debug errors
+	 *
+	 * @param string  $message error message.
+	 * @param boolean $default_message Default error message condition.
+	 * @param boolean $admin_only Only for admin condition.
+	 */
+	public function maybe_print_error( $message = '', $default_message = true, $admin_only = true ) {
+		if ( ! current_user_can( 'administrator' ) && $admin_only ) {
+			return;
+		}
+
+		$info_msg = $default_message ? __( 'This message and method are visible only for the site Administrator for debugging purposes.', 'russian-post-and-ems-for-woocommerce' ) : '';
+
+		$this->add_rate(
+			array(
+				'id'    => $this->get_rate_id(),
+				'label' => $this->title . '. ' . $message . ' ' . $info_msg,
+				'cost'  => 0,
+			)
+		);
+	}
+
+	/**
+	 * Log some data using WC logger
+	 *
+	 * @param string $message error message.
+	 * @param string $type error type.
+	 */
+	public function log_it( $message, $type = 'info' ) {
+		$hide_info_messages = get_option( 'rpaefw_hide_info_log', 'no' );
+
+		if ( 'yes' === $hide_info_messages && 'info' === $type ) {
+			return;
+		}
+
+		wc_get_logger()->{$type}( $message, array( 'source' => 'russian-post' ) );
 	}
 }

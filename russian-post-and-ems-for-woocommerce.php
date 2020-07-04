@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Russian Post and EMS for WooCommerce
  * Description: The plugin allows you to automatically calculate the shipping cost for "Russian Post" or "EMS"
- * Version: 1.3.5
+ * Version: 1.3.6
  * Author: Artem Komarov
  * Author URI: mailto:yumecommerce@gmail.com
  * License: GPLv3
@@ -153,6 +153,7 @@ class RPAEFW {
 		$option               = get_option( 'rpaefw_use_auto_email_tracking_code' );
 
 		if ( $option && self::is_pro_active() ) {
+			/* translators: links */
 			echo sprintf( esc_html__( 'The email with track number is sending automatically based on your %1$s settings. %2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=rpaefw' ) . '" target="_blank">', '</a>' );
 		} else {
 			echo '<p><label for="rpaefw_postcode_tracking_provider" style="width: 50px; display: inline-block;">' . esc_html__( 'Code', 'russian-post-and-ems-for-woocommerce' ) . ':</label>';
@@ -160,6 +161,7 @@ class RPAEFW {
 			echo '<p><input type="submit" class="add_note button" name="save" value="' . esc_html__( 'Save and send', 'russian-post-and-ems-for-woocommerce' ) . '"></p>';
 			if ( ! self::is_pro_active() ) {
 				echo '<p>';
+				/* translators: links */
 				echo sprintf( esc_html__( '%1$s Get PRO version %2$s to automatically synchronize order with the tracking.', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://woocommerce.com/products/russian-post-and-ems-pro-for-woocommerce/" target="_blank">', '</a>' );
 				echo '</p>';
 			}

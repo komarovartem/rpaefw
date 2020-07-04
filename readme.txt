@@ -3,7 +3,7 @@ Contributors: artemkomarov
 Tags: woocommerce, woocommerce shipping, ecommerce, shipping
 Requires at least: 5
 Tested up to: 5.4
-Stable tag: 1.3.5
+Stable tag: 1.3.6
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -67,6 +67,10 @@ The plugin by itself has no methods to calculate the shipping price. All data co
 4. PRO дополнение: автоматический трекинг отправлений и отслеживание статуса
 
 == Changelog ==
+
+= 1.3.6 =
+
+* Добавлена валидация и сообщения об ошибке для EKOM индекса ПВЗ в случае невозможности расчета.
 
 = 1.3.5 =
 

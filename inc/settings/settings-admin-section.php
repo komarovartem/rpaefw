@@ -29,21 +29,21 @@ $settings = array(
 	array(
 		'title'             => __( 'Application Authorization Token', 'russian-post-and-ems-for-woocommerce' ),
 		/* translators: links */
-		'desc'              => $this->only_in_pro_ver_text() . sprintf( __( 'To integrate with the API of the Russian Post Online Service. Token can be found in the %1$ssettings of your account%2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">', '</a>' ),
+		'desc'              => RPAEFW::only_in_pro_ver_text() . sprintf( __( 'To integrate with the API of the Russian Post Online Service. Token can be found in the %1$ssettings of your account%2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/settings#/api-settings" target="_blank">', '</a>' ),
 		'type'              => 'text',
 		'id'                => 'rpaefw_token',
 		'custom_attributes' => array(
-			$this->is_pro_active() ? '' : 'disabled' => '',
+			RPAEFW::is_pro_active() ? '' : 'disabled' => '',
 		),
 	),
 	array(
 		'title'             => __( 'User Authorization Key', 'russian-post-and-ems-for-woocommerce' ),
 		/* translators: links */
-		'desc'              => $this->only_in_pro_ver_text() . sprintf( __( 'To integrate with the API of the Russian Post Online Service. You can generate an authorization key %1$shere%2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">', '</a>' ),
+		'desc'              => RPAEFW::only_in_pro_ver_text() . sprintf( __( 'To integrate with the API of the Russian Post Online Service. You can generate an authorization key %1$shere%2$s', 'russian-post-and-ems-for-woocommerce' ), '<a href="https://otpravka.pochta.ru/specification#/authorization-key" target="_blank">', '</a>' ),
 		'type'              => 'text',
 		'id'                => 'rpaefw_key',
 		'custom_attributes' => array(
-			$this->is_pro_active() ? '' : 'disabled' => '',
+			RPAEFW::is_pro_active() ? '' : 'disabled' => '',
 		),
 	),
 );
@@ -61,28 +61,28 @@ if ( ! RPAEFW::is_pro_active() ) {
 
 	$settings[] = array(
 		'title'             => 'Отправка кода отслеживания',
-		'desc'              => $this->only_in_pro_ver_text() . 'Вы можете отправить код отслеживания сразу после создания нового отправления или при изменении статуса заказа на "Доставляется".',
+		'desc'              => RPAEFW::only_in_pro_ver_text() . 'Вы можете отправить код отслеживания сразу после создания нового отправления или при изменении статуса заказа на "Доставляется".',
 		'type'              => 'text',
 		'custom_attributes' => array(
-			$this->is_pro_active() ? '' : 'disabled' => '',
+			RPAEFW::is_pro_active() ? '' : 'disabled' => '',
 		),
 	);
 
 	$settings[] = array(
 		'title'             => 'Синхронизировать заказ со статусом отслеживания',
-		'desc'              => $this->only_in_pro_ver_text() . 'Выберите, как часто проверять статус отслеживания. Автоматически устанавливает статус заказа с «Обработка» на «Доставляется» после того, как отправление будет принято в ОПС. И изменяет статуса заказа на «Выполнен», когда отправление будет получено покупателем.',
+		'desc'              => RPAEFW::only_in_pro_ver_text() . 'Выберите, как часто проверять статус отслеживания. Автоматически устанавливает статус заказа с «Обработка» на «Доставляется» после того, как отправление будет принято в ОПС. И изменяет статуса заказа на «Выполнен», когда отправление будет получено покупателем.',
 		'type'              => 'text',
 		'custom_attributes' => array(
-			$this->is_pro_active() ? '' : 'disabled' => '',
+			RPAEFW::is_pro_active() ? '' : 'disabled' => '',
 		),
 	);
 
 	$settings[] = array(
 		'title'             => 'Блок отслеживания',
-		'desc'              => $this->only_in_pro_ver_text() . 'Отображение информации о трек номере на странице учетной записи клиента.',
+		'desc'              => RPAEFW::only_in_pro_ver_text() . 'Отображение информации о трек номере на странице учетной записи клиента.',
 		'type'              => 'text',
 		'custom_attributes' => array(
-			$this->is_pro_active() ? '' : 'disabled' => '',
+			RPAEFW::is_pro_active() ? '' : 'disabled' => '',
 		),
 	);
 }

@@ -589,7 +589,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	/**
 	 * Add additional cost based on shipping classes
 	 *
-	 * @param $package
+	 * @param array $package Shipping package.
 	 *
 	 * @return int
 	 */

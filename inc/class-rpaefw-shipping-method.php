@@ -1285,12 +1285,16 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 	}
 
 	/**
-	 * Log some data using WC logger
+	 * Log shipping data using WC logger
 	 *
 	 * @param string $message error message.
 	 * @param string $type error type.
 	 */
 	public function log_it( $message, $type = 'info' ) {
+		if ( ! current_user_can( 'administrator' ) ) {
+			return;
+		}
+
 		$hide_info_messages = get_option( 'rpaefw_hide_info_log', 'no' );
 
 		if ( 'yes' === $hide_info_messages && 'info' === $type ) {

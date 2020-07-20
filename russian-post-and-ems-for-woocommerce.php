@@ -9,7 +9,7 @@
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: russian-post-and-ems-for-woocommerce
  * WC requires at least: 3.6.0
- * WC tested up to: 4.2
+ * WC tested up to: 4.3
  *
  * @package Russian Post
  */
@@ -368,7 +368,7 @@ class RPAEFW {
 	 * Add plugin partials
 	 */
 	public function init() {
-		include_once dirname( __FILE__ ) . '/inc/class-rpaefw-admin.php';
+		include_once dirname( __FILE__ ) . '/inc/class-rpaefw-promo.php';
 	}
 }
 

@@ -123,8 +123,15 @@ class RPAEFW {
 			return;
 		}
 
+		$order            = wc_get_order( $post );
+		$shipping_methods = $order->get_shipping_methods();
+
+		if ( ! $shipping_methods ) {
+			return;
+		}
+
 		// do not display box if russian post shipping is not used.
-		foreach ( wc_get_order( $post )->get_shipping_methods() as $shipping ) {
+		foreach ( $shipping_methods as $shipping ) {
 			if ( ! in_array( $shipping->get_method_id(), array( 'rpaefw_post_calc', 'free_shipping' ), true ) ) {
 				return;
 			}

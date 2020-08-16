@@ -253,11 +253,12 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		if ( isset( $this->free_shipping ) && 'yes' === $this->free_shipping && RPAEFW::is_pro_active() ) {
 			if ( RPAEFW_PRO_Helper::is_free_shipping_available( $this ) ) {
-				$time = $this->get_delivery_time( $country_code, $is_ekom, $from, $to, $type );
+				$time                = $this->get_delivery_time( $country_code, $is_ekom, $from, $to, $type );
+				$free_shipping_title = $this->free_shipping_custom_title ? $this->free_shipping_custom_title : $this->title;
 				$this->add_rate(
 					array(
 						'id'      => $this->get_rate_id(),
-						'label'   => $this->title . $time,
+						'label'   => $free_shipping_title . $time,
 						'taxes'   => false,
 						'package' => $package,
 						'cost'    => 0,
@@ -266,7 +267,9 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 				return;
 			} else {
-				return;
+				if ( 'yes' === $this->free_shipping_hide_if_not_achieved ) {
+					return;
+				}
 			}
 		}
 

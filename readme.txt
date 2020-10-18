@@ -1,9 +1,10 @@
 === Russian Post and EMS for WooCommerce ===
 Contributors: artemkomarov
 Tags: woocommerce, woocommerce shipping, ecommerce, shipping
-Requires at least: 5
-Tested up to: 5.4
-Stable tag: 1.3.6
+Requires at least: 5.4
+Tested up to: 5.5
+Stable tag: 1.3.7
+Requires PHP: 7.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -67,6 +68,11 @@ The plugin by itself has no methods to calculate the shipping price. All data co
 4. PRO дополнение: автоматический трекинг отправлений и отслеживание статуса
 
 == Changelog ==
+
+= 1.3.7 =
+
+* Исправлены коды стран для международных отправлений
+* Добавлено более подробное описания для некоторых тарифов
 
 = 1.3.6 =
 

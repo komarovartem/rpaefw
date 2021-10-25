@@ -57,7 +57,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 
 		$ops_index    = get_option( 'rpaefw_ops_index' ) ? get_option( 'rpaefw_ops_index' ) : get_option( 'woocommerce_store_postcode' );
 		$from         = $this->from ? $this->from : $ops_index;
-		$is_ekom      = 53030 === $type;
+		$is_ekom      = in_array( $type, array( 53030, 53070, 54020 ) );
 		$dogovor      = get_option( 'rpaefw_dogovor' );
 		$country_code = $package['destination']['country'] ? $package['destination']['country'] : 'RU';
 		$postal_code  = wc_format_postcode( $package['destination']['postcode'], $country_code );
@@ -148,12 +148,11 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 		$is_overweight = false;
 		$weight_ranges = array(
 			2000  => array( 5001, 5011 ),
-			2500  => array( 16010, 16020, 47030, 47020 ),
-			5000  => array( 3000, 3010, 3020, 3001, 3011 ),
+			2500  => array( 16010, 16020 ),
+			5000  => array( 3000, 3010, 3020, 3001, 3011, 47030, 47020 ),
 			10000 => array( 27030, 27020, 29030, 29020, 28030, 28020 ),
 			14500 => array( 9001, 9011 ),
-			15000 => array( 53030 ),
-			20000 => array( 23030, 23020, 51030, 51020, 34030, 34020, 4031, 4021 ),
+			20000 => array( 23030, 23020, 51030, 51020, 34030, 34020, 4031, 4021, 53030, 53070, 54020 ),
 			31500 => array( 24030, 24020, 30030, 30020, 7030, 7020, 41030, 41020, 7031 ),
 			50000 => array( 4030, 4020 ),
 		);
@@ -273,7 +272,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			}
 		}
 
-		$request      = add_query_arg( $base_params, 'https://tariff.pochta.ru/tariff/v1/calculate?json' );
+		$request      = add_query_arg( $base_params, 'https://tariff.pochta.ru/tariff/v2/calculate?json' );
 		$request_hash = 'rpaefw_cache_' . md5( $request );
 
 		if ( ! $shipping_cost = get_transient( $request_hash ) ) {
@@ -348,7 +347,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 					'to'     => $to,
 					'object' => $type,
 				),
-				'https://delivery.pochta.ru/delivery/v1/calculate?json'
+				'https://delivery.pochta.ru/delivery/v2/calculate?json'
 			);
 
 			$request_hash = 'rpaefw_cache_' . md5( $request );
@@ -436,6 +435,7 @@ class RPAEFW_Shipping_Method extends WC_Shipping_Method {
 			31020 => 31020,
 			39000 => 39000,
 			40000 => 40000,
+			54020 => 53070,
 			53030 => 53070,
 			53070 => 53070,
 			7030  => 7020,
